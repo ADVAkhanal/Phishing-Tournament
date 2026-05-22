@@ -8,12 +8,23 @@ if (!connectionString) {
   console.warn('[db] DATABASE_URL is not set — queries will fail until it is configured.');
 }
 
+// SSL rules:
+//   - localhost / 127.0.0.1         → no SSL (local dev)
+//   - *.railway.internal             → no SSL (Railway private network)
+//   - sslmode=disable in URL         → respect explicit opt-out
+//   - everything else (public URLs)  → SSL, cert not verified (Railway proxy)
+// Intentionally NOT gated on NODE_ENV — Railway doesn't set it by default.
+const needsSsl = Boolean(
+  connectionString &&
+  !connectionString.includes('localhost') &&
+  !connectionString.includes('127.0.0.1') &&
+  !connectionString.includes('.railway.internal') &&
+  !connectionString.includes('sslmode=disable')
+);
+
 const pool = new Pool({
   connectionString,
-  ssl:
-    process.env.NODE_ENV === 'production' && connectionString && !connectionString.includes('localhost')
-      ? { rejectUnauthorized: false }
-      : false,
+  ssl: needsSsl ? { rejectUnauthorized: false } : false,
   max: 10,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 10_000,
