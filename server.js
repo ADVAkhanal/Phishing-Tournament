@@ -75,6 +75,28 @@ app.use(cookieParser());
 // Static assets
 app.use('/public', express.static(path.join(__dirname, 'public'), { maxAge: '7d' }));
 
+// Health check — mounted BEFORE session middleware so Railway can tell the
+// HTTP layer is alive even if Postgres is unreachable. Two responses:
+//   200 OK            — process up AND DB reachable
+//   200 OK degraded   — process up, DB unreachable (Railway treats 2xx as healthy)
+// We never let the healthcheck flip a healthy container into a restart loop
+// just because Postgres is briefly unavailable.
+app.get('/health', async (req, res) => {
+  let dbStatus = 'ok';
+  try {
+    await db.query('SELECT 1');
+  } catch (e) {
+    dbStatus = 'unreachable';
+    logger.warn('Health check DB unreachable', { error: e.message });
+  }
+  res.json({
+    status: dbStatus === 'ok' ? 'ok' : 'degraded',
+    database: dbStatus,
+    uptime: process.uptime(),
+    time: new Date().toISOString(),
+  });
+});
+
 // Sessions — backed by Postgres so they survive restarts and rollouts.
 app.use(
   session({
@@ -117,17 +139,6 @@ app.use((req, res, next) => {
 app.use(attachUser);
 app.use(csrf);
 
-// Health check (Railway healthcheckPath)
-app.get('/health', async (req, res) => {
-  try {
-    await db.query('SELECT 1');
-    res.json({ status: 'ok', uptime: process.uptime(), time: new Date().toISOString() });
-  } catch (e) {
-    logger.error('Health check DB failure', { error: e.message });
-    res.status(503).json({ status: 'degraded', error: 'database unavailable' });
-  }
-});
-
 // Routes
 app.use('/', authRoutes);
 app.use('/dashboard', dashboardRoutes);
@@ -155,22 +166,35 @@ app.use((req, res) => {
   });
 });
 
-// Error handler
+// Error handler — defensive: if a response has already started or the
+// EJS render itself throws (e.g. session-dependent locals missing because
+// the DB is down), fall back to a plain-text 500 instead of compounding
+// into an ERR_HTTP_HEADERS_SENT cascade.
 app.use((err, req, res, next) => {
-  if (err.code === 'EBADCSRFTOKEN') {
-    logger.warn('CSRF token rejected', { ip: req.ip, path: req.path });
-    return res.status(403).render('error', {
-      title: 'Forbidden',
-      code: 403,
-      message: 'Your session expired or the request could not be verified. Please reload and try again.',
-    });
+  if (res.headersSent) {
+    logger.error('Error after response started', { error: err.message, path: req.path });
+    return;
   }
-  logger.error('Unhandled error', { error: err.message, stack: err.stack, path: req.path });
-  res.status(500).render('error', {
-    title: 'Server Error',
-    code: 500,
-    message: 'Something went wrong. The incident has been logged.',
-  });
+
+  const isCsrf = err && err.code === 'EBADCSRFTOKEN';
+  if (isCsrf) {
+    logger.warn('CSRF token rejected', { ip: req.ip, path: req.path });
+  } else {
+    logger.error('Unhandled error', { error: err && err.message, stack: err && err.stack, path: req.path });
+  }
+
+  const status = isCsrf ? 403 : 500;
+  const title = isCsrf ? 'Forbidden' : 'Server Error';
+  const message = isCsrf
+    ? 'Your session expired or the request could not be verified. Please reload and try again.'
+    : 'Something went wrong. The incident has been logged.';
+
+  try {
+    return res.status(status).render('error', { title, code: status, message });
+  } catch (renderErr) {
+    logger.error('Error template render failed', { error: renderErr.message });
+    res.status(status).type('text/plain').send(`${status} ${title}\n${message}`);
+  }
 });
 
 async function start() {
