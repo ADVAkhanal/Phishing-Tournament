@@ -1,0 +1,120 @@
+<%- include('../partials/head') %>
+
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-3 mb-6">
+  <div>
+    <div class="font-display text-[12px] tracking-[2.2px] uppercase text-[var(--brand-red)]">Admin</div>
+    <h1 class="font-display text-3xl tracking-[1.2px] uppercase">Analytics</h1>
+    <p class="text-[var(--text-secondary)] mt-2">Company-wide resilience metrics, trend lines, and CMMC evidence export.</p>
+  </div>
+  <a href="/api/export/cmmc" class="btn-primary">📄 Export CMMC Evidence (CSV)</a>
+</div>
+
+<section class="grid lg:grid-cols-3 gap-6 mb-6">
+  <div class="card p-6 lg:col-span-1">
+    <div class="font-display text-[12px] tracking-[2.2px] uppercase text-[var(--text-muted)] mb-3">Company Resilience Score</div>
+    <% const c = resilience.tier.color; %>
+    <div class="text-6xl font-display tracking-[-1px]" style="color: <%= c %>;"><%= resilience.score %></div>
+    <div class="font-display text-[12px] tracking-[2px] uppercase mt-1" style="color: <%= c %>;"><%= resilience.tier.label %></div>
+    <div class="text-[var(--text-muted)] text-[12px] mt-3">
+      report_rate × 40 + training_rate × 30 + (1 − click_rate) × 30
+    </div>
+    <div class="mt-4 grid grid-cols-3 gap-2 text-center text-[11px] font-display tracking-[1.4px] uppercase text-[var(--text-muted)]">
+      <div><div class="text-base font-semibold text-[var(--success-green)]"><%= resilience.reportRate %>%</div>Report</div>
+      <div><div class="text-base font-semibold text-[var(--text-primary)]"><%= resilience.completionRate %>%</div>Training</div>
+      <div><div class="text-base font-semibold text-[var(--danger-red)]"><%= resilience.clickRate %>%</div>Click</div>
+    </div>
+  </div>
+
+  <div class="card p-6 lg:col-span-2">
+    <div class="font-display text-[12px] tracking-[2.2px] uppercase text-[var(--text-muted)] mb-3">Simulation Trends (6 months)</div>
+    <canvas id="trendChart" height="120"></canvas>
+  </div>
+</section>
+
+<section class="card p-6 mb-6">
+  <div class="font-display text-[12px] tracking-[2.2px] uppercase text-[var(--text-muted)] mb-3">Training Completion</div>
+  <canvas id="trainingChart" height="120"></canvas>
+</section>
+
+<section class="grid lg:grid-cols-2 gap-6 mb-6">
+  <div class="card overflow-hidden">
+    <div class="px-6 py-4 border-b border-[var(--border-subtle)] font-display text-[12px] tracking-[2.2px] uppercase text-[var(--text-muted)]">Department Breakdown</div>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-[10px] font-display tracking-[1.8px] uppercase text-[var(--text-muted)] bg-[var(--black-soft)] border-b border-[var(--border-subtle)]">
+          <th class="text-left px-4 py-2">Dept</th>
+          <th class="text-right px-4 py-2">Avg Score</th>
+          <th class="text-right px-4 py-2">Clicks</th>
+          <th class="text-right px-4 py-2">Reports</th>
+          <th class="text-right px-4 py-2">Members</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!byDept.length) { %><tr><td colspan="5" class="text-center py-6 italic text-[var(--text-muted)]">No data yet.</td></tr><% } %>
+        <% byDept.forEach(d => { %>
+          <tr class="border-b border-[var(--border-subtle)] last:border-0">
+            <td class="px-4 py-2"><%= d.department %></td>
+            <td class="px-4 py-2 text-right"><%= d.avg_score === null ? '—' : d.avg_score %></td>
+            <td class="px-4 py-2 text-right text-[var(--danger-red)]"><%= d.clicks %></td>
+            <td class="px-4 py-2 text-right text-[var(--success-green)]"><%= d.reports %></td>
+            <td class="px-4 py-2 text-right"><%= d.members %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card p-6">
+    <div class="font-display text-[12px] tracking-[2.2px] uppercase text-[var(--text-muted)] mb-3">Risk Heatmap — Department × Difficulty</div>
+    <% const difficulties = ['beginner','intermediate','advanced','expert']; %>
+    <% const depts = [...new Set(heatmap.map(h => h.department))]; %>
+    <% const lookup = {}; heatmap.forEach(h => { lookup[h.department + '|' + h.difficulty] = h; }); %>
+    <% if (!depts.length) { %>
+      <div class="text-[var(--text-muted)] text-sm italic">No simulation data yet.</div>
+    <% } else { %>
+      <div class="overflow-x-auto">
+        <table class="w-full text-[12px]">
+          <thead>
+            <tr>
+              <th class="text-left px-2 py-2 font-display tracking-[1.4px] uppercase text-[var(--text-muted)]">Dept</th>
+              <% difficulties.forEach(d => { %><th class="text-center px-2 py-2 font-display tracking-[1.4px] uppercase text-[var(--text-muted)]"><%= d %></th><% }) %>
+            </tr>
+          </thead>
+          <tbody>
+            <% depts.forEach(dp => { %>
+              <tr>
+                <td class="px-2 py-1 font-medium"><%= dp %></td>
+                <% difficulties.forEach(df => {
+                     const h = lookup[dp + '|' + df];
+                     const tot = h ? h.total : 0;
+                     const bad = h ? h.bad : 0;
+                     const pct = tot ? bad / tot : 0;
+                     const color = pct > 0.5 ? 'var(--danger-red)' : pct > 0.25 ? 'var(--warning-orange)' : pct > 0 ? 'var(--accent-yellow)' : 'var(--success-green)';
+                  %>
+                  <td class="text-center px-2 py-1">
+                    <% if (!tot) { %>
+                      <div class="text-[var(--text-muted)]">—</div>
+                    <% } else { %>
+                      <div class="inline-block px-2 py-1 rounded font-display tracking-[1px]" style="background: <%= color %>22; color: <%= color %>; border:1px solid <%= color %>55;"><%= bad %>/<%= tot %></div>
+                    <% } %>
+                  </td>
+                <% }) %>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+  window.__DATA__ = {
+    monthly: <%- JSON.stringify(monthly) %>,
+    training: <%- JSON.stringify(training) %>,
+  };
+</script>
+<script src="/public/js/charts.js"></script>
+
+<%- include('../partials/foot') %>

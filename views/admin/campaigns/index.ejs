@@ -1,0 +1,50 @@
+<%- include('../../partials/head') %>
+
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-3 mb-6">
+  <div>
+    <div class="font-display text-[12px] tracking-[2.2px] uppercase text-[var(--brand-red)]">Admin</div>
+    <h1 class="font-display text-3xl tracking-[1.2px] uppercase">Campaigns</h1>
+    <p class="text-[var(--text-secondary)] mt-2">Track phishing simulations sent to employees. PhishGuard records who was targeted and what each user did — admins manually mark openings, clicks, and credential submissions.</p>
+  </div>
+  <a href="/admin/campaigns/new" class="btn-primary">+ New Campaign</a>
+</div>
+
+<div class="card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-[10px] font-display tracking-[1.8px] uppercase text-[var(--text-muted)] bg-[var(--black-soft)] border-b border-[var(--border-subtle)]">
+          <th class="text-left px-4 py-3">Name</th>
+          <th class="text-left px-4 py-3">Template</th>
+          <th class="text-left px-4 py-3">Difficulty</th>
+          <th class="text-left px-4 py-3">Status</th>
+          <th class="text-right px-4 py-3">Targets</th>
+          <th class="text-right px-4 py-3">Reported</th>
+          <th class="text-right px-4 py-3">Clicked</th>
+          <th class="text-left px-4 py-3">Started</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!campaigns.length) { %>
+          <tr><td colspan="8" class="text-center py-8 text-[var(--text-muted)] italic">No campaigns yet. Create one to start tracking.</td></tr>
+        <% } %>
+        <% campaigns.forEach(c => { %>
+          <tr class="border-b border-[var(--border-subtle)] last:border-0 hover:bg-[var(--black-card-hover)]">
+            <td class="px-4 py-3"><a href="/admin/campaigns/<%= c.id %>" class="text-[var(--text-primary)] hover:text-[var(--brand-red)]"><%= c.name %></a></td>
+            <td class="px-4 py-3 text-[var(--text-secondary)]"><%= c.template_name || '—' %></td>
+            <td class="px-4 py-3"><span class="badge"><%= c.difficulty %></span></td>
+            <td class="px-4 py-3">
+              <span class="badge <%= c.status === 'active' ? 'badge-yellow' : c.status === 'completed' ? 'badge-green' : '' %>"><%= c.status %></span>
+            </td>
+            <td class="px-4 py-3 text-right"><%= c.targets %></td>
+            <td class="px-4 py-3 text-right text-[var(--success-green)]"><%= c.reported %></td>
+            <td class="px-4 py-3 text-right text-[var(--danger-red)]"><%= c.clicked %></td>
+            <td class="px-4 py-3 text-[var(--text-muted)] text-[11px]"><%= c.start_date ? new Date(c.start_date).toLocaleDateString() : '—' %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include('../../partials/foot') %>

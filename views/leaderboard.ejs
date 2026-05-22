@@ -1,0 +1,81 @@
+<%- include('partials/head') %>
+
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-6">
+  <div>
+    <div class="font-display text-[12px] tracking-[2.2px] uppercase text-[var(--brand-red)]">Tournament</div>
+    <h1 class="font-display text-3xl tracking-[1.2px] uppercase">Leaderboard</h1>
+  </div>
+  <form method="GET" class="flex flex-wrap gap-2 items-center">
+    <div class="inline-flex rounded-lg overflow-hidden border border-[var(--border-subtle)]">
+      <a href="?scope=month<%= dept ? '&dept=' + encodeURIComponent(dept) : '' %>" class="px-4 py-2 font-display text-[11px] tracking-[1.6px] uppercase <%= scope==='month' ? 'bg-[var(--brand-red)] text-white' : 'text-[var(--text-secondary)]' %>">This Month</a>
+      <a href="?scope=all<%= dept ? '&dept=' + encodeURIComponent(dept) : '' %>" class="px-4 py-2 font-display text-[11px] tracking-[1.6px] uppercase <%= scope==='all' ? 'bg-[var(--brand-red)] text-white' : 'text-[var(--text-secondary)]' %>">All Time</a>
+    </div>
+    <select name="dept" class="input !py-2 !max-w-[240px]" onchange="this.form.submit()">
+      <option value="all">All Departments</option>
+      <% allDepts.forEach(d => { %>
+        <option value="<%= d %>" <%= dept === d ? 'selected' : '' %>><%= d %></option>
+      <% }) %>
+    </select>
+    <input type="hidden" name="scope" value="<%= scope %>">
+  </form>
+</div>
+
+<% if (champion) { %>
+<section class="card p-6 mb-6 relative overflow-hidden border-[var(--accent-yellow)]/40">
+  <div class="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-[var(--accent-yellow)]/10 blur-3xl"></div>
+  <div class="relative confetti-host">
+    <div class="font-display text-[12px] tracking-[2.2px] uppercase text-[var(--accent-yellow)]">🏆 Top Phish Hunter</div>
+    <div class="mt-2 text-3xl font-display tracking-[1px] uppercase"><%= champion.first_name %> <%= champion.last_name %></div>
+    <div class="text-[var(--text-secondary)] mt-1"><%= champion.department %> · <%= champion.pts %> pts · <%= champion.badges %> badges · <%= champion.reports %> reports</div>
+  </div>
+</section>
+<% } %>
+
+<section class="card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-[10px] font-display tracking-[1.8px] uppercase text-[var(--text-muted)] bg-[var(--black-soft)] border-b border-[var(--border-subtle)]">
+          <th class="text-left px-4 py-3">Rank</th>
+          <th class="text-left px-4 py-3">Name</th>
+          <th class="text-left px-4 py-3">Department</th>
+          <th class="text-right px-4 py-3">Points</th>
+          <th class="text-right px-4 py-3">Badges</th>
+          <th class="text-right px-4 py-3">Reports</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% ranked.forEach(r => { %>
+          <tr class="border-b border-[var(--border-subtle)] last:border-0 <%= r.isMe ? 'bg-[var(--brand-red)]/8' : '' %>">
+            <td class="px-4 py-3 font-display text-base <%= r.rank === 1 ? 'text-[var(--accent-yellow)]' : '' %>"><%= r.rank %></td>
+            <td class="px-4 py-3"><%= r.first_name %> <%= r.last_name %><% if (r.isMe) { %> <span class="text-[var(--brand-red)] text-xs">(you)</span><% } %></td>
+            <td class="px-4 py-3 text-[var(--text-secondary)]"><%= r.department %></td>
+            <td class="px-4 py-3 text-right font-display text-base"><%= r.pts %></td>
+            <td class="px-4 py-3 text-right"><%= r.badges %></td>
+            <td class="px-4 py-3 text-right"><%= r.reports %></td>
+          </tr>
+        <% }) %>
+        <% if (!ranked.length) { %>
+          <tr><td colspan="6" class="text-center py-8 text-[var(--text-muted)] italic">No participants yet.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="mt-8">
+  <h2 class="font-display text-lg tracking-[1.6px] uppercase text-[var(--text-muted)] mb-3">Department Standings</h2>
+  <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <% departments.forEach(d => { %>
+      <div class="card p-4">
+        <div class="flex items-center justify-between">
+          <div class="font-display text-[12px] tracking-[2px] uppercase"><%= d.department %></div>
+          <div class="font-display text-base text-[var(--brand-red)]"><%= d.pts %></div>
+        </div>
+        <div class="text-[11px] text-[var(--text-muted)] mt-1"><%= d.members %> members</div>
+      </div>
+    <% }) %>
+  </div>
+</section>
+
+<%- include('partials/foot') %>

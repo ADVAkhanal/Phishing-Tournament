@@ -1,0 +1,69 @@
+<%- include('../../partials/head') %>
+
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-3 mb-6">
+  <div>
+    <div class="font-display text-[12px] tracking-[2.2px] uppercase text-[var(--brand-red)]">Admin</div>
+    <h1 class="font-display text-3xl tracking-[1.2px] uppercase">User Management</h1>
+    <p class="text-[var(--text-secondary)] mt-2">Add and manage employees. Users are deactivated rather than deleted to preserve audit history.</p>
+  </div>
+</div>
+
+<details class="card p-5 mb-6">
+  <summary class="cursor-pointer font-display text-[12px] tracking-[2.2px] uppercase text-[var(--brand-red)]">+ Add New User</summary>
+  <form method="POST" action="/admin/users/new" class="grid md:grid-cols-2 gap-4 mt-5">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div><label class="label">First name</label><input class="input" name="first_name" required></div>
+    <div><label class="label">Last name</label><input class="input" name="last_name" required></div>
+    <div><label class="label">Email</label><input class="input" type="email" name="email" required></div>
+    <div>
+      <label class="label">Department</label>
+      <select class="input" name="department" required>
+        <% departments.forEach(d => { %><option value="<%= d %>"><%= d %></option><% }) %>
+      </select>
+    </div>
+    <div>
+      <label class="label">Role</label>
+      <select class="input" name="role"><option value="employee">Employee</option><option value="admin">Admin</option></select>
+    </div>
+    <div>
+      <label class="label">Initial Password (12+ chars, upper/lower/digit/symbol)</label>
+      <input class="input" type="text" name="password" required>
+    </div>
+    <div class="md:col-span-2"><button class="btn-primary">Add User</button></div>
+  </form>
+</details>
+
+<div class="card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-[10px] font-display tracking-[1.8px] uppercase text-[var(--text-muted)] bg-[var(--black-soft)] border-b border-[var(--border-subtle)]">
+          <th class="text-left px-4 py-3">Name</th>
+          <th class="text-left px-4 py-3">Email</th>
+          <th class="text-left px-4 py-3">Department</th>
+          <th class="text-left px-4 py-3">Role</th>
+          <th class="text-right px-4 py-3">Points</th>
+          <th class="text-right px-4 py-3">Badges</th>
+          <th class="text-left px-4 py-3">Last Login</th>
+          <th class="text-left px-4 py-3">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% users.forEach(u => { %>
+          <tr class="border-b border-[var(--border-subtle)] last:border-0 <%= !u.is_active ? 'opacity-60' : '' %>">
+            <td class="px-4 py-2"><a href="/admin/users/<%= u.id %>" class="hover:text-[var(--brand-red)]"><%= u.first_name %> <%= u.last_name %></a></td>
+            <td class="px-4 py-2 text-[var(--text-secondary)]"><%= u.email %></td>
+            <td class="px-4 py-2 text-[var(--text-secondary)]"><%= u.department %></td>
+            <td class="px-4 py-2"><span class="badge <%= u.role === 'admin' ? 'badge-red' : '' %>"><%= u.role %></span></td>
+            <td class="px-4 py-2 text-right font-display"><%= u.pts %></td>
+            <td class="px-4 py-2 text-right"><%= u.badges %></td>
+            <td class="px-4 py-2 text-[11px] text-[var(--text-muted)]"><%= u.last_login ? new Date(u.last_login).toLocaleString() : '—' %></td>
+            <td class="px-4 py-2"><span class="badge <%= u.is_active ? 'badge-green' : '' %>"><%= u.is_active ? 'active' : 'inactive' %></span></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include('../../partials/foot') %>

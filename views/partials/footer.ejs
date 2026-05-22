@@ -1,0 +1,29 @@
+<footer class="border-t border-[var(--border-subtle)] mt-16 bg-[var(--black-soft)]">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8 grid md:grid-cols-3 gap-8 text-[13px]">
+    <div>
+      <div class="font-display text-[12px] tracking-[2.2px] uppercase text-[var(--brand-red)] mb-2">Advanced Companies</div>
+      <p class="text-[var(--text-secondary)]"><%= companyName %></p>
+      <p class="text-[var(--text-muted)] mt-1">Precision aerospace &amp; defense manufacturing · Owasso, OK</p>
+      <p class="text-[var(--text-muted)] mt-3 italic"><%= tagline %></p>
+    </div>
+    <div>
+      <div class="font-display text-[12px] tracking-[2.2px] uppercase text-[var(--text-secondary)] mb-2">Internal Platform</div>
+      <ul class="space-y-1 text-[var(--text-secondary)]">
+        <li><a href="<%= HANDBOOK_URL %>" class="hover:text-[var(--brand-red)]" target="_blank" rel="noopener">📘 Employee Handbook</a></li>
+        <li><a href="/training" class="hover:text-[var(--brand-red)]">🎓 Training Center</a></li>
+        <li><a href="/report" class="hover:text-[var(--brand-red)]">🚨 Report Suspicious Email</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="font-display text-[12px] tracking-[2.2px] uppercase text-[var(--text-secondary)] mb-2">Compliance</div>
+      <ul class="space-y-1 text-[var(--text-muted)]">
+        <li>CMMC Level 2 · NIST 800-171</li>
+        <li>AT.L2-3.2.1 · 3.2.2 · 3.2.3</li>
+        <li>AS9100D · ITAR registered</li>
+      </ul>
+    </div>
+  </div>
+  <div class="border-t border-[var(--border-subtle)] py-4 text-center text-[11px] font-display tracking-[2px] uppercase text-[var(--text-muted)]">
+    © <%= year %> Advanced Machining &amp; Fab., Inc. · Internal use only
+  </div>
+</footer>

@@ -1,0 +1,64 @@
+<%- include('partials/head') %>
+
+<div class="max-w-3xl mx-auto">
+  <div class="font-display text-[12px] tracking-[2.2px] uppercase text-[var(--brand-red)]">Report</div>
+  <h1 class="font-display text-3xl tracking-[1.2px] uppercase">Report Suspicious Email</h1>
+
+  <!-- Handbook awareness callout -->
+  <div class="card mt-5 p-5 border-[var(--brand-red)]/40 bg-[var(--brand-red)]/5">
+    <div class="font-display text-[11px] tracking-[2px] uppercase text-[var(--brand-red)] mb-2">📘 Why this matters</div>
+    <p class="text-[14px] text-[var(--text-secondary)]">
+      Per <a href="<%= HANDBOOK_URL %>" target="_blank" rel="noopener" class="text-[var(--brand-red)] underline">§6.1 Computer Security</a> and
+      <a href="<%= HANDBOOK_URL %>" target="_blank" rel="noopener" class="text-[var(--brand-red)] underline">§6.9 Security</a> of the Advanced Companies Employee Handbook,
+      employees have an affirmative duty to report potential security risks. Reporting is always rewarded — even if the email turns out to be legitimate.
+    </p>
+  </div>
+
+  <% if (result) { %>
+    <div class="card mt-5 p-6 <%= result.ok ? 'border-[var(--success-green)]/40' : 'border-[var(--accent-yellow)]/40' %>">
+      <div class="text-2xl mb-1"><%= result.ok ? '✅' : '👍' %></div>
+      <div class="font-display text-lg tracking-[1.2px] uppercase <%= result.ok ? 'text-[var(--success-green)]' : 'text-[var(--accent-yellow)]' %>"><%= result.headline %></div>
+      <p class="text-[var(--text-secondary)] mt-2"><%= result.detail %></p>
+      <div class="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded bg-[var(--brand-red)]/10 border border-[var(--brand-red)]/30 text-[var(--brand-red)] font-display tracking-[1.4px] uppercase text-[12px]">
+        +<%= result.pointsAwarded %> points
+      </div>
+      <% if (result.badges && result.badges.length) { %>
+        <div class="mt-3 text-[var(--text-secondary)]">🏅 New badge<%= result.badges.length > 1 ? 's' : '' %>: <%= result.badges.join(', ') %></div>
+      <% } %>
+    </div>
+  <% } %>
+
+  <form method="POST" action="/report" class="card mt-5 p-6 space-y-4">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div>
+      <label class="label">Subject line</label>
+      <input class="input" name="subject_line" required maxlength="500" placeholder="Paste or type the exact subject line">
+    </div>
+    <div>
+      <label class="label">Sender address</label>
+      <input class="input" name="sender_address" required maxlength="255" placeholder="e.g. it-support@proosh0p-erp.com">
+    </div>
+    <div>
+      <label class="label">Why is it suspicious?</label>
+      <select name="reason" class="input" required>
+        <option value="">-- choose --</option>
+        <option>Urgency / fear language</option>
+        <option>Unfamiliar sender domain</option>
+        <option>Mismatched / suspicious link</option>
+        <option>Unexpected attachment</option>
+        <option>Asks me to skip a normal process</option>
+        <option>Asks for credentials / personal info</option>
+        <option>Impersonates a coworker, customer, or vendor</option>
+        <option>Other (explain below)</option>
+      </select>
+    </div>
+    <div>
+      <label class="label">Notes (optional)</label>
+      <textarea class="input" name="notes" rows="3" maxlength="2000" placeholder="Anything else useful — links you saw, time received, etc."></textarea>
+    </div>
+    <button type="submit" class="btn-primary">Submit Report</button>
+    <p class="text-[11px] text-[var(--text-muted)] mt-2">We never punish reporting. If this turns out to be a real email, IT will simply confirm — and you still earn points for staying alert.</p>
+  </form>
+</div>
+
+<%- include('partials/foot') %>

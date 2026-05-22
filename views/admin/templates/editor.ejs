@@ -1,0 +1,92 @@
+<%- include('../../partials/head') %>
+
+<a href="/admin/templates" class="font-display text-[11px] tracking-[1.6px] uppercase text-[var(--text-muted)] hover:text-[var(--brand-red)]">← Templates</a>
+
+<div class="grid lg:grid-cols-2 gap-6 mt-3">
+  <form method="POST" action="/admin/templates/save" class="card p-6 space-y-4">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <% if (template) { %><input type="hidden" name="id" value="<%= template.id %>"><% } %>
+
+    <h1 class="font-display text-2xl tracking-[1.2px] uppercase"><%= mode === 'new' ? 'New' : 'Edit' %> Template</h1>
+
+    <div>
+      <label class="label">Name</label>
+      <input class="input" name="name" required maxlength="255" value="<%= template ? template.name : '' %>">
+    </div>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div>
+        <label class="label">Category</label>
+        <input class="input" name="category" required maxlength="100" value="<%= template ? template.category : '' %>">
+      </div>
+      <div>
+        <label class="label">Difficulty</label>
+        <select name="difficulty" class="input" required>
+          <% ['beginner','intermediate','advanced','expert'].forEach(d => { %>
+            <option value="<%= d %>" <%= template && template.difficulty === d ? 'selected' : '' %>><%= d %></option>
+          <% }) %>
+        </select>
+      </div>
+    </div>
+    <div>
+      <label class="label">Subject Line</label>
+      <input class="input" name="subject_line" required maxlength="500" value="<%= template ? template.subject_line : '' %>">
+    </div>
+    <div>
+      <label class="label">Body (HTML)</label>
+      <textarea class="input font-mono text-[12px]" name="body_html" rows="10" required><%= template ? template.body_html : '' %></textarea>
+    </div>
+    <div>
+      <label class="label">Body (Plain Text)</label>
+      <textarea class="input font-mono text-[12px]" name="body_text" rows="4"><%= template ? template.body_text : '' %></textarea>
+    </div>
+    <div>
+      <label class="label">Red flags (one per line)</label>
+      <textarea class="input" name="red_flags" rows="4"><%= template && template.red_flags ? template.red_flags.join('\n') : '' %></textarea>
+    </div>
+    <div>
+      <label class="label">Learning points</label>
+      <textarea class="input" name="learning_points" rows="4" required><%= template ? template.learning_points : '' %></textarea>
+    </div>
+    <div>
+      <label class="label">Handbook policy refs (comma separated, e.g. 6.1, 6.12)</label>
+      <input class="input" name="handbook_policy_refs" value="<%= template && template.handbook_policy_refs ? template.handbook_policy_refs.join(', ') : '' %>">
+    </div>
+
+    <div class="flex gap-2">
+      <button type="submit" class="btn-primary">Save</button>
+      <% if (template) { %>
+        <form method="POST" action="/admin/templates/<%= template.id %>/toggle" class="inline">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="btn-secondary"><%= template.is_active ? 'Deactivate' : 'Activate' %></button>
+        </form>
+      <% } %>
+      <a href="/admin/templates" class="btn-secondary">Cancel</a>
+    </div>
+  </form>
+
+  <% if (template) { %>
+  <div class="card p-6">
+    <div class="font-display text-[12px] tracking-[2.2px] uppercase text-[var(--text-muted)] mb-3">Preview</div>
+    <div class="bg-white text-black rounded-lg p-4 max-h-[80vh] overflow-y-auto">
+      <div class="text-sm text-gray-600 border-b border-gray-200 pb-2 mb-3">
+        <div><b>Subject:</b> <%= template.subject_line %></div>
+      </div>
+      <%- template.body_html %>
+    </div>
+    <% if (template.red_flags && template.red_flags.length) { %>
+      <div class="mt-4">
+        <div class="font-display text-[12px] tracking-[2px] uppercase text-[var(--brand-red)] mb-2">Red Flags</div>
+        <ul class="list-disc pl-5 text-[13px] text-[var(--text-secondary)] space-y-1">
+          <% template.red_flags.forEach(f => { %><li><%= f %></li><% }) %>
+        </ul>
+      </div>
+    <% } %>
+    <div class="mt-4">
+      <div class="font-display text-[12px] tracking-[2px] uppercase text-[var(--brand-red)] mb-2">Learning Points</div>
+      <p class="text-[13px] text-[var(--text-secondary)]"><%= template.learning_points %></p>
+    </div>
+  </div>
+  <% } %>
+</div>
+
+<%- include('../../partials/foot') %>

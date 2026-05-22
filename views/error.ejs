@@ -1,0 +1,10 @@
+<%- include('partials/head') %>
+<div class="min-h-[60vh] flex items-center justify-center">
+  <div class="card max-w-lg w-full p-10 text-center">
+    <div class="font-display text-[80px] leading-none text-[var(--brand-red)] tracking-[-2px]"><%= code %></div>
+    <h1 class="font-display text-xl tracking-[1.4px] uppercase mt-2"><%= title %></h1>
+    <p class="text-[var(--text-secondary)] mt-3"><%= message %></p>
+    <a href="/dashboard" class="btn-primary inline-block mt-6">Return to Dashboard</a>
+  </div>
+</div>
+<%- include('partials/foot') %>

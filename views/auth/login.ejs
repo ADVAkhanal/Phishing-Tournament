@@ -1,0 +1,39 @@
+<%- include('../partials/head') %>
+
+<div class="min-h-[70vh] flex items-center justify-center">
+  <div class="card w-full max-w-md p-8 relative overflow-hidden">
+    <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[var(--brand-red)] via-[var(--brand-red-dark)] to-transparent"></div>
+
+    <div class="flex items-center gap-3 mb-6">
+      <img src="/public/images/logo.svg" alt="<%= companyShort %>" class="h-10 w-10 rounded-md object-cover ring-1 ring-[var(--border-subtle)]" onerror="this.style.display='none'">
+      <div>
+        <div class="font-display text-[18px] tracking-[1.8px] uppercase">PhishGuard <span class="text-[var(--brand-red)]">Tournament</span></div>
+        <div class="text-[11px] text-[var(--text-muted)] uppercase tracking-[1.6px]"><%= tagline %></div>
+      </div>
+    </div>
+
+    <% if (error) { %>
+      <div class="mb-4 px-3 py-2 rounded border border-red-500/40 bg-red-500/10 text-red-200 text-sm"><%= error %></div>
+    <% } %>
+
+    <form method="POST" action="/login" class="space-y-4" autocomplete="off">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div>
+        <label class="label">Email</label>
+        <input class="input" type="email" name="email" required autofocus value="<%= email %>" autocomplete="username">
+      </div>
+      <div>
+        <label class="label">Password</label>
+        <input class="input" type="password" name="password" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn-primary w-full">Sign In</button>
+    </form>
+
+    <div class="mt-5 flex items-center justify-between text-[11px] uppercase tracking-[1.6px] font-display text-[var(--text-muted)]">
+      <a href="/forgot" class="hover:text-[var(--brand-red)]">Forgot password</a>
+      <a href="<%= HANDBOOK_URL %>" target="_blank" rel="noopener" class="hover:text-[var(--brand-red)]">📘 Employee Handbook</a>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/foot') %>

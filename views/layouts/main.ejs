@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <title><%= title %> · <%= appName %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/public/css/custom.css">
+  <% if (typeof extraHead !== 'undefined') { %><%- extraHead %><% } %>
+</head>
+<body>
+  <%- include('../partials/navbar') %>
+
+  <main class="px-4 sm:px-6 lg:px-10 py-8 max-w-7xl mx-auto">
+    <% if (flash) { %>
+      <div class="mb-6 px-4 py-3 rounded-lg border <%= flash.type === 'error' ? 'border-red-500/40 bg-red-500/10 text-red-200' : 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200' %>">
+        <%= flash.msg %>
+      </div>
+    <% } %>
+
+    <%- body %>
+  </main>
+
+  <%- include('../partials/footer') %>
+  <%- include('../partials/toast') %>
+  <script src="/public/js/toast.js"></script>
+</body>
+</html>

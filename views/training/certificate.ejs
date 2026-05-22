@@ -1,0 +1,48 @@
+<%- include('../partials/head') %>
+
+<div class="certificate-wrap max-w-3xl mx-auto">
+  <div id="certificate" class="card p-12 relative overflow-hidden border-2 border-[var(--brand-red)]/40">
+    <div class="absolute inset-x-0 top-0 h-2 bg-gradient-to-r from-[var(--brand-red)] via-[var(--brand-red-dark)] to-transparent"></div>
+    <div class="absolute -right-20 -bottom-20 w-72 h-72 rounded-full bg-[var(--brand-red)]/5 blur-3xl"></div>
+
+    <div class="text-center relative">
+      <img src="/public/images/logo.svg" alt="logo" class="h-16 w-16 mx-auto rounded-md object-cover ring-1 ring-[var(--border-subtle)]" onerror="this.style.display='none'">
+      <div class="mt-4 font-display text-[11px] tracking-[3px] uppercase text-[var(--text-muted)]">Advanced Companies · PhishGuard Tournament</div>
+      <h1 class="font-display text-3xl tracking-[2px] uppercase mt-2">Certificate of Completion</h1>
+      <p class="text-[var(--text-secondary)] mt-6">This certifies that</p>
+      <div class="font-display text-4xl tracking-[1.5px] uppercase text-[var(--brand-red)] mt-2"><%= user.first_name %> <%= user.last_name %></div>
+      <p class="text-[var(--text-secondary)] mt-4">has successfully completed the training module</p>
+      <div class="font-display text-2xl tracking-[1.2px] uppercase mt-2"><%= module.title %></div>
+      <div class="text-[12px] font-display tracking-[1.8px] uppercase text-[var(--text-muted)] mt-2">CMMC Control: <%= module.cmmc_control %> · Score: <%= completion.quiz_score %>%</div>
+
+      <div class="mt-8 grid grid-cols-2 gap-8 text-left">
+        <div>
+          <div class="font-display text-[10px] tracking-[2px] uppercase text-[var(--text-muted)]">Completed</div>
+          <div class="text-[var(--text-primary)] mt-1"><%= new Date(completion.completed_at).toLocaleString() %></div>
+        </div>
+        <div>
+          <div class="font-display text-[10px] tracking-[2px] uppercase text-[var(--text-muted)]">Authority</div>
+          <div class="text-[var(--text-primary)] mt-1">Advanced Machining &amp; Fab., Inc.</div>
+        </div>
+      </div>
+
+      <div class="mt-8 text-[10px] tracking-[1.8px] font-display uppercase text-[var(--text-muted)]">Certificate ID: PG-<%= completion.id %>-<%= module.id %>-<%= user.id %></div>
+    </div>
+  </div>
+
+  <div class="flex justify-center gap-3 mt-6 no-print">
+    <button onclick="window.print()" class="btn-primary">Print</button>
+    <a href="/training" class="btn-secondary">Back to Training</a>
+  </div>
+</div>
+
+<style>
+@media print {
+  .no-print, header, footer, nav { display: none !important; }
+  body { background: white !important; }
+  #certificate { border-color: #999 !important; background: white !important; color: black !important; }
+  #certificate * { color: black !important; }
+}
+</style>
+
+<%- include('../partials/foot') %>

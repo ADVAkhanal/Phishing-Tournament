@@ -1,0 +1,108 @@
+<%- include('../../partials/head') %>
+
+<a href="/admin/campaigns" class="font-display text-[11px] tracking-[1.6px] uppercase text-[var(--text-muted)] hover:text-[var(--brand-red)]">← Campaigns</a>
+
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-3 mt-2 mb-6">
+  <div>
+    <div class="font-display text-[12px] tracking-[2.2px] uppercase text-[var(--brand-red)]"><%= campaign.template_name || 'Campaign' %></div>
+    <h1 class="font-display text-3xl tracking-[1.2px] uppercase"><%= campaign.name %></h1>
+    <% if (campaign.description) { %><p class="text-[var(--text-secondary)] mt-2 max-w-3xl"><%= campaign.description %></p><% } %>
+  </div>
+  <div class="flex items-center gap-2">
+    <span class="badge <%= campaign.status === 'active' ? 'badge-yellow' : campaign.status === 'completed' ? 'badge-green' : '' %>"><%= campaign.status %></span>
+    <% if (campaign.status !== 'completed') { %>
+      <form method="POST" action="/admin/campaigns/<%= campaign.id %>/complete">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn-primary">Complete Campaign</button>
+      </form>
+    <% } %>
+  </div>
+</div>
+
+<section class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+  <%- include('../../partials/stats-card', { icon: '📨', label: 'Sent', value: counts.sent, sub: '' }) %>
+  <%- include('../../partials/stats-card', { icon: '👁️', label: 'Opened', value: counts.opened, sub: '' }) %>
+  <%- include('../../partials/stats-card', { icon: '🖱️', label: 'Clicked', value: counts.clicked, sub: '' }) %>
+  <%- include('../../partials/stats-card', { icon: '⚠️', label: 'Compromised', value: counts.submitted, sub: '' }) %>
+  <%- include('../../partials/stats-card', { icon: '🛡️', label: 'Reported', value: counts.reported, sub: '' }) %>
+</section>
+
+<!-- Funnel -->
+<section class="card p-6 mb-6">
+  <div class="font-display text-[12px] tracking-[2.2px] uppercase text-[var(--text-muted)] mb-4">Funnel</div>
+  <% const total = Math.max(counts.total, 1);
+     const stages = [
+       { label: 'Sent', val: counts.sent, color: 'var(--silver-3)' },
+       { label: 'Opened', val: counts.opened, color: 'var(--silver-2)' },
+       { label: 'Clicked', val: counts.clicked, color: 'var(--warning-orange)' },
+       { label: 'Compromised', val: counts.submitted, color: 'var(--danger-red)' },
+       { label: 'Reported', val: counts.reported, color: 'var(--success-green)' },
+     ]; %>
+  <div class="space-y-2">
+    <% stages.forEach(s => { %>
+      <div>
+        <div class="flex justify-between text-[12px] font-display tracking-[1.6px] uppercase text-[var(--text-secondary)]">
+          <span><%= s.label %></span><span><%= s.val %> / <%= counts.total %></span>
+        </div>
+        <div class="h-3 bg-[var(--black-soft)] rounded">
+          <div class="h-3 rounded" style="width: <%= ((s.val / total) * 100).toFixed(1) %>%; background: <%= s.color %>;"></div>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+</section>
+
+<!-- Per-user table -->
+<section class="card overflow-hidden">
+  <div class="px-6 py-4 border-b border-[var(--border-subtle)] font-display text-[12px] tracking-[2.2px] uppercase text-[var(--text-muted)]">Per-User Results</div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-[10px] font-display tracking-[1.8px] uppercase text-[var(--text-muted)] bg-[var(--black-soft)] border-b border-[var(--border-subtle)]">
+          <th class="text-left px-4 py-3">User</th>
+          <th class="text-left px-4 py-3">Department</th>
+          <th class="text-left px-4 py-3">Outcome</th>
+          <th class="text-left px-4 py-3">Opened</th>
+          <th class="text-left px-4 py-3">Clicked</th>
+          <th class="text-left px-4 py-3">Reported</th>
+          <th class="text-right px-4 py-3">TTR (s)</th>
+          <th class="text-right px-4 py-3">Mark</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% perUser.forEach(r => { %>
+          <tr class="border-b border-[var(--border-subtle)] last:border-0">
+            <td class="px-4 py-2"><%= r.first_name %> <%= r.last_name %></td>
+            <td class="px-4 py-2 text-[var(--text-secondary)]"><%= r.department %></td>
+            <td class="px-4 py-2">
+              <% if (r.outcome === 'reported') { %><span class="badge badge-green">REPORTED</span>
+              <% } else if (r.outcome === 'clicked') { %><span class="badge badge-orange">CLICKED</span>
+              <% } else if (r.outcome === 'compromised') { %><span class="badge badge-red">COMPROMISED</span>
+              <% } else if (r.outcome === 'ignored') { %><span class="badge">IGNORED</span>
+              <% } else { %><span class="badge">PENDING</span><% } %>
+            </td>
+            <td class="px-4 py-2 text-[11px] text-[var(--text-muted)]"><%= r.email_opened_at ? new Date(r.email_opened_at).toLocaleString() : '—' %></td>
+            <td class="px-4 py-2 text-[11px] text-[var(--text-muted)]"><%= r.link_clicked_at ? new Date(r.link_clicked_at).toLocaleString() : '—' %></td>
+            <td class="px-4 py-2 text-[11px] text-[var(--text-muted)]"><%= r.reported_at ? new Date(r.reported_at).toLocaleString() : '—' %></td>
+            <td class="px-4 py-2 text-right text-[var(--text-secondary)]"><%= r.time_to_report_seconds || '—' %></td>
+            <td class="px-4 py-2 text-right">
+              <form method="POST" action="/admin/campaigns/<%= campaign.id %>/result" class="inline">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <input type="hidden" name="user_id" value="<%= r.id %>">
+                <select name="event" class="input !py-1 !text-[11px] !w-auto inline-block" onchange="this.form.submit()">
+                  <option value="">mark...</option>
+                  <option value="opened">opened</option>
+                  <option value="clicked">clicked</option>
+                  <option value="submitted">submitted creds</option>
+                  <option value="reset">reset</option>
+                </select>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<%- include('../../partials/foot') %>

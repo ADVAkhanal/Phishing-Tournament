@@ -1,0 +1,10 @@
+<div class="card p-5 flex items-start gap-4">
+  <div class="text-3xl"><%= icon %></div>
+  <div class="flex-1 min-w-0">
+    <div class="font-display text-[11px] tracking-[2.2px] uppercase text-[var(--text-muted)]"><%= label %></div>
+    <div class="text-2xl font-semibold mt-1 text-[var(--text-primary)] truncate"><%= value %></div>
+    <% if (typeof sub !== 'undefined' && sub) { %>
+      <div class="text-[12px] text-[var(--text-secondary)] mt-1"><%= sub %></div>
+    <% } %>
+  </div>
+</div>
