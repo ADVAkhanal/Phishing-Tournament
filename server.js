@@ -10,6 +10,8 @@ const cookieParser = require('cookie-parser');
 
 const db = require('./utils/db');
 const logger = require('./utils/logger');
+const { run: runMigrate } = require('./migrate');
+const { run: runSeed } = require('./seed');
 const csrf = require('./middleware/csrf');
 const { attachUser } = require('./middleware/auth');
 
@@ -175,6 +177,20 @@ async function start() {
   try {
     await db.query('SELECT 1');
     logger.info('Database connected');
+
+    // Idempotent schema + seed on every boot — required because Railway's
+    // build phase has no DATABASE_URL, so we can't migrate at install time.
+    // Both functions are safe to re-run; they no-op when state is current.
+    if (process.env.SKIP_BOOT_MIGRATE !== 'true') {
+      try {
+        await runMigrate();
+        logger.info('Schema migration complete');
+        await runSeed();
+        logger.info('Seed data ensured');
+      } catch (e) {
+        logger.error('Boot migration/seed failed', { error: e.message });
+      }
+    }
   } catch (e) {
     logger.error('Database connection failed at startup', { error: e.message });
   }
