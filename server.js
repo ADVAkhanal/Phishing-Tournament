@@ -166,13 +166,14 @@ app.use((req, res) => {
   });
 });
 
-// Error handler — defensive: if a response has already started or the
-// EJS render itself throws (e.g. session-dependent locals missing because
-// the DB is down), fall back to a plain-text 500 instead of compounding
-// into an ERR_HTTP_HEADERS_SENT cascade.
+// Error handler — defensive against two failure modes:
+// 1. Error fires before res.locals middleware ran (e.g. session store unreachable),
+//    leaving appName/HANDBOOK_URL/etc undefined → EJS throws → we fill safe defaults.
+// 2. res.render() errors are passed via callback, not thrown synchronously, so
+//    try/catch is useless here — use the (view, opts, cb) overload instead.
 app.use((err, req, res, next) => {
   if (res.headersSent) {
-    logger.error('Error after response started', { error: err.message, path: req.path });
+    logger.error('Error after response started', { error: err && err.message, path: req.path });
     return;
   }
 
@@ -189,12 +190,27 @@ app.use((err, req, res, next) => {
     ? 'Your session expired or the request could not be verified. Please reload and try again.'
     : 'Something went wrong. The incident has been logged.';
 
-  try {
-    return res.status(status).render('error', { title, code: status, message });
-  } catch (renderErr) {
-    logger.error('Error template render failed', { error: renderErr.message });
-    res.status(status).type('text/plain').send(`${status} ${title}\n${message}`);
-  }
+  // Fill every local the layout partials reference so the template never
+  // throws a second time (which would hit Express's finalhandler instead of us).
+  res.locals.appName       = res.locals.appName       || 'PhishGuard Tournament';
+  res.locals.companyShort  = res.locals.companyShort  || 'Advanced Companies';
+  res.locals.companyName   = res.locals.companyName   || 'Advanced Machining & Fab., Inc.';
+  res.locals.tagline       = res.locals.tagline       || 'Precision Security. Zero Tolerance for Threats.';
+  res.locals.year          = res.locals.year          || new Date().getFullYear();
+  res.locals.HANDBOOK_URL  = res.locals.HANDBOOK_URL  || '';
+  res.locals.activeNav     = res.locals.activeNav     || '';
+  res.locals.flash         = res.locals.flash         || null;
+  res.locals.user          = res.locals.user          || null;
+  res.locals.csrfToken     = res.locals.csrfToken     || '';
+
+  res.status(status).render('error', { title, code: status, message }, (renderErr, html) => {
+    if (renderErr) {
+      logger.error('Error template render failed', { error: renderErr.message });
+      res.type('text/plain').send(`${status} ${title}\n${message}`);
+    } else {
+      res.send(html);
+    }
+  });
 });
 
 async function start() {
