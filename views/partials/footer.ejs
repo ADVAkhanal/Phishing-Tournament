@@ -1,7 +1,13 @@
 <footer class="border-t border-[var(--border-subtle)] mt-16 bg-[var(--black-soft)]">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8 grid md:grid-cols-3 gap-8 text-[13px]">
     <div>
-      <div class="font-display text-[12px] tracking-[2.2px] uppercase text-[var(--brand-red)] mb-2">Advanced Companies</div>
+      <div class="flex items-center gap-2 mb-2">
+        <img src="/public/images/logo.svg" alt="" class="h-8 w-8 object-contain" onerror="this.style.display='none'">
+        <div class="leading-tight">
+          <div class="font-display text-[15px] font-bold tracking-[2.4px] uppercase text-[var(--text-primary)]">ADVANCED</div>
+          <div class="text-[9px] font-display tracking-[2px] uppercase text-[var(--text-muted)]">Partners in Manufacturing &amp; Distribution</div>
+        </div>
+      </div>
       <p class="text-[var(--text-secondary)]"><%= companyName %></p>
       <p class="text-[var(--text-muted)] mt-1">Precision aerospace &amp; defense manufacturing · Owasso, OK</p>
       <p class="text-[var(--text-muted)] mt-3 italic"><%= tagline %></p>

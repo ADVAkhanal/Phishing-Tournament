@@ -102,6 +102,7 @@ app.use((req, res, next) => {
     'https://advanced-company-handbook.up.railway.app/Advanced_Handbook_Dashboard.html';
   res.locals.companyName = 'Advanced Machining & Fab., Inc.';
   res.locals.companyShort = 'Advanced Companies';
+  res.locals.companyTagline = 'Partners in Manufacturing & Distribution';
   res.locals.appName = 'PhishGuard Tournament';
   res.locals.tagline = 'Precision Security. Zero Tolerance for Threats.';
   res.locals.year = new Date().getFullYear();
