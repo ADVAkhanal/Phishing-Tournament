@@ -87,6 +87,36 @@ router.post(
   }
 );
 
+// No-password guest sign-in. Signs directly into the shared Guest account by
+// id - no email, no password field, one click. role='employee' on that
+// account means the nav and requireAdmin already restrict it to exactly the
+// non-administrative surface without any extra checks needed here.
+router.post('/login/guest', loginLimiter, async (req, res, next) => {
+  try {
+    const guest = await db.one(
+      `SELECT id, role, is_active FROM users WHERE email = 'guest@advcosinc.com'`
+    );
+    if (!guest || !guest.is_active) {
+      return res.status(503).render('auth/login', {
+        title: 'Sign In',
+        error: 'Guest access is not available right now. Try Admin Sign In or contact IT.',
+        email: '',
+      });
+    }
+
+    await db.query('UPDATE users SET last_login = NOW() WHERE id = $1', [guest.id]);
+    req.session.userId = guest.id;
+    req.session.userRole = guest.role;
+
+    await audit(guest.id, 'guest_login', null, req.ip);
+    logger.info('guest_login', { userId: guest.id });
+
+    return res.redirect('/dashboard');
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.post('/logout', (req, res) => {
   const userId = req.session.userId;
   req.session.destroy(() => {

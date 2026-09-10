@@ -17,18 +17,42 @@
       <div class="mb-4 px-3 py-2 rounded border border-red-500/40 bg-red-500/10 text-red-200 text-sm"><%= error %></div>
     <% } %>
 
-    <form method="POST" action="/login" class="space-y-4" autocomplete="off">
-      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-      <div>
-        <label class="label">Email</label>
-        <input class="input" type="email" name="email" required autofocus value="<%= email %>" autocomplete="username">
-      </div>
-      <div>
-        <label class="label">Password</label>
-        <input class="input" type="password" name="password" required autocomplete="current-password">
-      </div>
-      <button type="submit" class="btn-primary w-full">Sign In</button>
-    </form>
+    <!-- Guest / Admin toggle -->
+    <div class="flex rounded-lg border border-[var(--border-subtle)] p-1 mb-5" role="tablist">
+      <button type="button" id="tab-guest" class="flex-1 py-2 rounded-md text-[12px] font-display tracking-[1.6px] uppercase transition-colors" onclick="showTab('guest')">Guest</button>
+      <button type="button" id="tab-admin" class="flex-1 py-2 rounded-md text-[12px] font-display tracking-[1.6px] uppercase transition-colors" onclick="showTab('admin')">Admin</button>
+    </div>
+
+    <!-- Guest: one click, no fields -->
+    <div id="panel-guest">
+      <p class="text-[13px] text-[var(--text-secondary)] mb-4">
+        Browse the dashboard, training, leaderboard, and the phishing report tool with no account needed.
+        Admin-only screens aren't part of this view.
+      </p>
+      <form method="POST" action="/login/guest">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button type="submit" class="btn-primary w-full">Continue as Guest</button>
+      </form>
+    </div>
+
+    <!-- Admin: real email + password -->
+    <div id="panel-admin" class="hidden">
+      <form method="POST" action="/login" class="space-y-4" autocomplete="off">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div>
+          <label class="label">Email</label>
+          <input class="input" type="email" name="email" required value="<%= email %>" autocomplete="username" placeholder="advancedit@advcosinc.com">
+        </div>
+        <div>
+          <label class="label">Password</label>
+          <input class="input" type="password" name="password" required autocomplete="current-password" placeholder="12345">
+        </div>
+        <button type="submit" class="btn-primary w-full">Sign In</button>
+      </form>
+      <p class="mt-3 text-[11px] text-[var(--text-muted)]">
+        Temporary admin login — <span class="font-mono">advancedit@advcosinc.com</span> / <span class="font-mono">12345</span>. Change this once real admin accounts are set up.
+      </p>
+    </div>
 
     <div class="mt-5 flex items-center justify-between text-[11px] uppercase tracking-[1.6px] font-display text-[var(--text-muted)]">
       <a href="/forgot" class="hover:text-[var(--brand-red)]">Forgot password</a>
@@ -36,5 +60,22 @@
     </div>
   </div>
 </div>
+
+<style>
+  #tab-guest.active, #tab-admin.active { background: var(--brand-red); color: #fff; }
+  #tab-guest:not(.active), #tab-admin:not(.active) { color: var(--text-muted); }
+</style>
+<script>
+  function showTab(which) {
+    const isGuest = which === 'guest';
+    document.getElementById('panel-guest').classList.toggle('hidden', !isGuest);
+    document.getElementById('panel-admin').classList.toggle('hidden', isGuest);
+    document.getElementById('tab-guest').classList.toggle('active', isGuest);
+    document.getElementById('tab-admin').classList.toggle('active', !isGuest);
+  }
+  // Default to whichever tab makes sense: if a login error just happened, that
+  // was the admin form, so stay there instead of bouncing back to Guest.
+  showTab('<%= error ? "admin" : "guest" %>');
+</script>
 
 <%- include('../partials/foot') %>

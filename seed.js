@@ -4,8 +4,22 @@ const bcrypt = require('bcrypt');
 const db = require('./utils/db');
 const { run: migrate } = require('./migrate');
 
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin@advcosinc.com').toLowerCase();
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'ChangeMeNow!2026';
+// TEMPORARY: weak password by explicit request ("for now"). This bypasses the
+// app's own stated password policy (12+ chars, upper/lower/digit/symbol) - the
+// seed bootstrap path has always written a hash directly rather than going
+// through validation, so nothing stops it. Rotate this once real admin
+// accounts are in place.
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'advancedit@advcosinc.com').toLowerCase();
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '12345';
+
+// Guaranteed regardless of what ADMIN_EMAIL/ADMIN_PASSWORD are actually set to
+// in the live environment (can't be verified from here) - this specific
+// account is what was asked for, so it has to exist independent of whatever
+// the env-var-driven bootstrap above resolves to.
+const REQUESTED_ADMIN_EMAIL = 'advancedit@advcosinc.com';
+const REQUESTED_ADMIN_PASSWORD = '12345';
+
+const GUEST_EMAIL = 'guest@advcosinc.com';
 
 const TEMPLATES = require('./seed-data/templates');
 const BADGES = require('./seed-data/badges');
@@ -27,6 +41,47 @@ async function ensureAdmin() {
   );
   // eslint-disable-next-line no-console
   console.log(`[seed] admin created: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`);
+}
+
+async function ensureRequestedAdmin() {
+  const existing = await db.one('SELECT id FROM users WHERE email = $1', [REQUESTED_ADMIN_EMAIL]);
+  if (existing) {
+    // eslint-disable-next-line no-console
+    console.log(`[seed] requested admin already exists: ${REQUESTED_ADMIN_EMAIL}`);
+    return;
+  }
+  const hash = await bcrypt.hash(REQUESTED_ADMIN_PASSWORD, 12);
+  await db.query(
+    `INSERT INTO users (email, password_hash, first_name, last_name, department, role)
+     VALUES ($1, $2, 'Advanced', 'IT', 'IT', 'admin')`,
+    [REQUESTED_ADMIN_EMAIL, hash]
+  );
+  // eslint-disable-next-line no-console
+  console.log(`[seed] requested admin created: ${REQUESTED_ADMIN_EMAIL} / ${REQUESTED_ADMIN_PASSWORD}`);
+}
+
+// Shared, no-password Guest account. It has a real (random, unknown) password
+// hash so it can never be reached through the normal email/password form -
+// the ONLY way in is the dedicated "Continue as Guest" button, which signs in
+// by user id directly. role stays 'employee' so it automatically gets exactly
+// the non-administrative surface (nav gating and requireAdmin both already
+// key off role, nothing extra was needed there).
+async function ensureGuest() {
+  const existing = await db.one('SELECT id FROM users WHERE email = $1', [GUEST_EMAIL]);
+  if (existing) {
+    // eslint-disable-next-line no-console
+    console.log('[seed] guest account already exists');
+    return;
+  }
+  const randomPassword = require('crypto').randomBytes(32).toString('hex');
+  const hash = await bcrypt.hash(randomPassword, 12);
+  await db.query(
+    `INSERT INTO users (email, password_hash, first_name, last_name, department, role)
+     VALUES ($1, $2, 'Guest', 'Visitor', 'Guest', 'employee')`,
+    [GUEST_EMAIL, hash]
+  );
+  // eslint-disable-next-line no-console
+  console.log('[seed] guest account created');
 }
 
 async function seedTemplates() {
@@ -132,7 +187,16 @@ async function seedTabletop() {
 
 async function run() {
   await migrate();
+  // Requested admin runs first: if ADMIN_EMAIL happens to already equal this
+  // same address, ensureAdmin() below would otherwise win the race and create
+  // it with whatever ADMIN_PASSWORD is set to instead of the password that
+  // was actually asked for. Running this one first and letting ensureAdmin's
+  // own skip-if-exists check see it afterward avoids that without forcing a
+  // password reset on every boot (which would undo a real admin's later
+  // password change).
+  await ensureRequestedAdmin();
   await ensureAdmin();
+  await ensureGuest();
   await seedTemplates();
   await seedBadges();
   await seedTraining();
