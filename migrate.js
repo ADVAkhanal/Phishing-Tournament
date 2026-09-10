@@ -28,8 +28,21 @@ CREATE TABLE IF NOT EXISTS phishing_templates (
   difficulty VARCHAR(20) CHECK (difficulty IN ('beginner', 'intermediate', 'advanced', 'expert')),
   red_flags TEXT[],
   learning_points TEXT NOT NULL,
+  discussion_questions TEXT[],
   handbook_policy_refs TEXT[],
   is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- NCSC Exercise-in-a-Box style: open-ended reflection captured against a specific
+-- learning moment, not just a static paragraph read passively. This is what turns
+-- the debrief into real evidence of engagement for AT.L2-3.2.1, not a claim of it.
+CREATE TABLE IF NOT EXISTS reflection_responses (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id),
+  campaign_id INTEGER REFERENCES campaigns(id),
+  question TEXT NOT NULL,
+  response TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -139,6 +152,11 @@ CREATE TABLE IF NOT EXISTS user_reports (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- CREATE TABLE IF NOT EXISTS is a no-op on a table that already exists (this app is
+-- already deployed), so a brand-new column has to be added explicitly, not just
+-- declared in the CREATE TABLE above, or it silently never lands on production.
+ALTER TABLE phishing_templates ADD COLUMN IF NOT EXISTS discussion_questions TEXT[];
+
 CREATE INDEX IF NOT EXISTS idx_campaign_results_campaign ON campaign_results(campaign_id);
 CREATE INDEX IF NOT EXISTS idx_campaign_results_user ON campaign_results(user_id);
 CREATE INDEX IF NOT EXISTS idx_points_ledger_user ON points_ledger(user_id);
@@ -146,6 +164,37 @@ CREATE INDEX IF NOT EXISTS idx_points_ledger_created ON points_ledger(created_at
 CREATE INDEX IF NOT EXISTS idx_training_completions_user ON training_completions(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_log_user ON audit_log(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_log_created ON audit_log(created_at);
+
+-- NCSC Exercise-in-a-Box style tabletop exercises: a scenario library (objective,
+-- roles, sequential injects with open-ended discussion questions — deliberately
+-- worded to have no single right answer) plus a session log so running one is
+-- itself CMMC AT.L2-3.2.1 evidence, not just a document nobody ever used.
+CREATE TABLE IF NOT EXISTS tabletop_exercises (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  objective TEXT NOT NULL,
+  scenario_summary TEXT NOT NULL,
+  recommended_roles TEXT[] NOT NULL,
+  estimated_minutes INTEGER DEFAULT 75,
+  injects JSONB NOT NULL,
+  cmmc_control VARCHAR(20),
+  handbook_refs TEXT[],
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS tabletop_sessions (
+  id SERIAL PRIMARY KEY,
+  exercise_id INTEGER REFERENCES tabletop_exercises(id),
+  facilitated_by INTEGER REFERENCES users(id),
+  session_date DATE NOT NULL,
+  participants TEXT[] NOT NULL,
+  hot_wash_notes TEXT,
+  action_items JSONB DEFAULT '[]',
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_tabletop_sessions_exercise ON tabletop_sessions(exercise_id);
 `;
 
 async function run() {

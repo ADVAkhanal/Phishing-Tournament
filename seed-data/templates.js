@@ -32,6 +32,10 @@ module.exports = [
     ],
     learning_points:
       "If you had clicked this link and entered your credentials, it would have violated Section 6.1 (Computer Security) and Section 6.12 (Use of Company Technology) of the Advanced Companies Employee Handbook. Always verify IT requests through official channels.",
+    discussion_questions: [
+      'If you were mid-shift and worried about being locked out of production scheduling, how much slower would you have read this email? What would actually have stopped you from clicking?',
+      "You don't have IT's direct number memorized. What's your realistic next step when you're suspicious but can't immediately verify — and is that step written down anywhere you could find it in 30 seconds?",
+    ],
     handbook_policy_refs: ['6.1', '6.12'],
   },
   {
@@ -57,6 +61,10 @@ module.exports = [
     ],
     learning_points:
       "Shipping scams exploit urgency. Per Section 6.1, employees must exercise caution when interacting with electronic communications. Always verify tracking numbers directly on the carrier's official website.",
+    discussion_questions: [
+      "This one didn't touch anything work-related — just a package. Why does that make it easier to let your guard down, and should it?",
+      'What would you actually do differently if this arrived on your personal phone instead of your work email?',
+    ],
     handbook_policy_refs: ['6.1'],
   },
   {
@@ -83,6 +91,10 @@ module.exports = [
     ],
     learning_points:
       "HR-themed phishing exploits your concern about personal benefits. Per Section 6.1, never enter personal information via unexpected email links. Contact HR directly to verify.",
+    discussion_questions: [
+      'This one asks for your SSN and date of birth — information you type into legitimate forms all the time. What specifically made this instance different from a real benefits enrollment?',
+      "If a coworker told you they'd already entered their SSN before realizing something was off, what would you want them to do in the next five minutes, and would they know to do it?",
+    ],
     handbook_policy_refs: ['6.1', '4.5'],
   },
 
@@ -111,6 +123,10 @@ module.exports = [
     ],
     learning_points:
       "Operational Technology phishing targets manufacturing systems. Per Section 6.9 (Security), report any suspicious system communications to IT immediately.",
+    discussion_questions: [
+      "You're on the shop floor, not at a desk with time to scrutinize headers. What would actually make you stop and question a message like this in the middle of a shift?",
+      'If a machine operator downloaded and ran that .exe, what is the realistic blast radius — and does everyone on the floor know who to call the moment they realize what they did?',
+    ],
     handbook_policy_refs: ['6.1', '6.9'],
   },
   {
@@ -136,6 +152,10 @@ module.exports = [
     ],
     learning_points:
       "Quality system impersonation creates false urgency. Per Section 6.9, immediately advise your manager of any known or potential security risks.",
+    discussion_questions: [
+      "Naming a real customer (Gulfstream) and a real-looking part number made this feel credible. What's the one thing you could check in 60 seconds that would confirm or kill that credibility?",
+      'If this had actually been a real NCR routed the wrong way, what would get lost by reporting it as suspicious first and sorting out the mix-up second?',
+    ],
     handbook_policy_refs: ['6.9', '8.2'],
   },
   {
@@ -162,6 +182,10 @@ module.exports = [
     ],
     learning_points:
       "Vendor impersonation attacks target financial processes. Per Section 2.2 (Ethics Code), verify all payment requests through established channels.",
+    discussion_questions: [
+      'A real vendor changing their bank details by email, unprompted, is one of the oldest fraud patterns there is — so why does it still work? What makes this instance feel routine rather than alarming?',
+      'If AP had already sent the wire before anyone caught this, what would the first hour after discovery need to look like, and who needs to be on that call?',
+    ],
     handbook_policy_refs: ['9.1', '2.2'],
   },
 
@@ -187,6 +211,10 @@ module.exports = [
     ],
     learning_points:
       "CEO impersonation attacks exploit trust. Per Section 2.2 (Ethics Code), employees must 'not knowingly misrepresent ADVANCED and will not speak on behalf of ADVANCED unless specifically authorized.' Always verify financial requests through a second channel.",
+    discussion_questions: [
+      'If the real Scott called you and asked you to keep a wire quiet from the rest of the team, would you? What specifically makes that request legitimate coming from him but not from this email — and is that distinction something you could actually act on under pressure?',
+      "Dual-approval purchasing controls exist for exactly this scenario. What would it take for someone to feel comfortable pausing an urgent-sounding request from their CEO to follow that control anyway?",
+    ],
     handbook_policy_refs: ['2.2', '9.1'],
   },
   {
@@ -212,6 +240,10 @@ module.exports = [
     ],
     learning_points:
       "Audit-themed phishing exploits compliance anxiety. Per Section 6.9, report suspicious communications to IT before taking action.",
+    discussion_questions: [
+      "In a real CMMC-scoped audit, how would you actually confirm this came from your real registrar? Do you know who that is, off the top of your head, right now?",
+      'If a major nonconformance really had been issued, what would going through IT first cost you versus what could an unverified click cost the company?',
+    ],
     handbook_policy_refs: ['6.9', '9.1'],
   },
   {
@@ -237,6 +269,10 @@ module.exports = [
     ],
     learning_points:
       "Customer impersonation targets your desire to be responsive. Per Section 9.1 (Confidentiality), sensitive business information should only be shared through verified channels.",
+    discussion_questions: [
+      "Being short-listed against competitors is a real incentive to move fast. How do you weigh 'don't lose the order' against 'verify this is real' when both feel urgent at the same time?",
+      "A CAGE code isn't secret, but handing it out on request to an unverified sender is still a habit. What's the actual harm in that habit, and where's the line between helpful and careless?",
+    ],
     handbook_policy_refs: ['9.1', '3.1'],
   },
 
@@ -264,6 +300,10 @@ module.exports = [
     ],
     learning_points:
       "Government impersonation is among the most sophisticated attacks. Per Section 6.9, report ANY suspicious government correspondence to IT and management immediately.",
+    discussion_questions: [
+      "Do you actually know whether CMMC assessments come through DCSA or through your C3PAO? If you don't, who in this building does — and would you know to ask them before responding?",
+      'This one threatens contract suspension, the single scariest consequence for a defense subcontractor. Does escalating fear make you more or less likely to slow down and verify — and how do you build the habit of slowing down anyway?',
+    ],
     handbook_policy_refs: ['6.1', '6.9', '9.1'],
   },
   {
@@ -289,6 +329,10 @@ module.exports = [
     ],
     learning_points:
       "MFA fatigue attacks trick you into approving fake sign-in requests. Per Section 6.1 and 6.12, never approve MFA prompts you did not initiate.",
+    discussion_questions: [
+      "If you got a real MFA push notification you didn't expect — no email, just the app — what would you actually do with it? Is 'deny and move on' something you've ever practiced, or only something you'd think of in the moment?",
+      "The scary part of this one is the location, not the request itself. What would this look like if the attacker used a US city instead of Russia — would it still work on you?",
+    ],
     handbook_policy_refs: ['6.1', '6.12'],
   },
   {
@@ -317,6 +361,10 @@ module.exports = [
     ],
     learning_points:
       "Per Section 9.1 (Confidentiality and Nondisclosure of Trade Secrets), access to sensitive information should be limited to a 'need to know' basis. If you receive an unexpected file share, verify with the sender before opening.",
+    discussion_questions: [
+      "Using a real coworker's name and a plausible reason to look ('before the meeting tomorrow') is what makes this one hard. What's your actual, practiced way of confirming a file share is real when you can't just walk over and ask?",
+      "This one specifically baited curiosity about a CUI diagram. If clicking felt harmless because you were 'just going to look,' what does that reveal about how attackers think you'll behave — and how do you train yourself out of it?",
+    ],
     handbook_policy_refs: ['6.1', '9.1'],
   },
 ];

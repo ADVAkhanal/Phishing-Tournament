@@ -1,0 +1,186 @@
+<%- include('../../partials/head') %>
+
+<style>
+  @media print {
+    .no-print { display: none !important; }
+    body { background: #fff !important; }
+    .card { break-inside: avoid; border: 1px solid #ccc !important; }
+  }
+</style>
+
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-6 no-print">
+  <div>
+    <div class="font-display text-[12px] tracking-[2.2px] uppercase text-[var(--brand-red)]">Admin</div>
+    <h1 class="font-display text-3xl tracking-[1.2px] uppercase">Executive Report</h1>
+    <p class="text-[var(--text-secondary)] mt-2 max-w-2xl">Every program metric on one page, built to hand to leadership. Click Print to save as a PDF — no download, no file to find, it just opens your browser's save dialog.</p>
+  </div>
+  <div class="flex gap-2">
+    <button onclick="window.print()" class="btn-primary">🖨 Print / Save as PDF</button>
+    <a href="/api/export/cmmc" class="btn-secondary">Download Full Data (CSV)</a>
+  </div>
+</div>
+
+<!-- Print header, hidden on screen -->
+<div class="hidden print:block mb-6">
+  <h1 class="font-display text-2xl uppercase"><%= companyName %> — Security Awareness Program</h1>
+  <p class="text-sm text-gray-600">Executive Report · Generated <%= generatedAt.toLocaleString() %></p>
+</div>
+
+<!-- Headline tiles -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+  <div class="card p-5">
+    <div class="text-[10px] font-display tracking-[1.8px] uppercase text-[var(--text-muted)] mb-1">Company Resilience</div>
+    <div class="text-3xl font-display" style="color:<%= resScore.tier.color %>"><%= resScore.score %></div>
+    <div class="text-[11px] font-display tracking-[1.6px] uppercase mt-1" style="color:<%= resScore.tier.color %>"><%= resScore.tier.label %></div>
+  </div>
+  <div class="card p-5">
+    <div class="text-[10px] font-display tracking-[1.8px] uppercase text-[var(--text-muted)] mb-1">Employees Covered</div>
+    <div class="text-3xl font-display text-[var(--text-primary)]"><%= headcount %></div>
+    <div class="text-[11px] text-[var(--text-muted)] mt-1"><%= campaignsRun %> simulations completed</div>
+  </div>
+  <div class="card p-5">
+    <div class="text-[10px] font-display tracking-[1.8px] uppercase text-[var(--text-muted)] mb-1">Report Rate</div>
+    <div class="text-3xl font-display text-[var(--success-green)]"><%= simsSummary.total_targets ? Math.round(100 * simsSummary.reported / simsSummary.total_targets) : 0 %>%</div>
+    <div class="text-[11px] text-[var(--text-muted)] mt-1">of simulated phishing correctly reported</div>
+  </div>
+  <div class="card p-5">
+    <div class="text-[10px] font-display tracking-[1.8px] uppercase text-[var(--text-muted)] mb-1">Training Completion</div>
+    <div class="text-3xl font-display text-[var(--text-primary)]"><%= overallTrainingRate %>%</div>
+    <div class="text-[11px] text-[var(--text-muted)] mt-1">across <%= trainingByModule.length %> CMMC-mapped modules</div>
+  </div>
+</div>
+
+<!-- What needs attention -->
+<% if (openActionItems.length) { %>
+<div class="card p-6 mb-6 border-[var(--danger-red)]/40">
+  <div class="font-display text-[12px] tracking-[2px] uppercase text-[var(--danger-red)] mb-3">⚠ Needs a Decision — <%= openActionItems.length %> Open Item<%= openActionItems.length === 1 ? '' : 's' %></div>
+  <p class="text-[13px] text-[var(--text-secondary)] mb-3">Surfaced from tabletop exercise hot-washes. Each has a named owner — these are the things standing between "we practiced this" and "we're actually ready."</p>
+  <ul class="space-y-2">
+    <% openActionItems.forEach(a => { %>
+      <li class="text-[13px] text-[var(--text-primary)] pl-3 border-l-2 border-[var(--danger-red)]"><span class="font-medium"><%= a.owner %>:</span> <%= a.description %></li>
+    <% }) %>
+  </ul>
+</div>
+<% } %>
+
+<!-- Trend -->
+<div class="card p-6 mb-6">
+  <div class="font-display text-[12px] tracking-[1.8px] uppercase text-[var(--text-muted)] mb-4">6-Month Trend — Reported vs. Clicked</div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-[10px] font-display tracking-[1.6px] uppercase text-[var(--text-muted)] border-b border-[var(--border-subtle)]">
+          <th class="text-left py-2">Month</th>
+          <th class="text-right py-2">Simulations</th>
+          <th class="text-right py-2 text-[var(--success-green)]">Reported</th>
+          <th class="text-right py-2 text-[var(--danger-red)]">Clicked</th>
+          <th class="text-right py-2">Report Rate</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% monthlyTrend.forEach(m => { %>
+          <tr class="border-b border-[var(--border-subtle)] last:border-0">
+            <td class="py-2"><%= m.label %></td>
+            <td class="py-2 text-right"><%= m.total %></td>
+            <td class="py-2 text-right text-[var(--success-green)]"><%= m.reported %></td>
+            <td class="py-2 text-right text-[var(--danger-red)]"><%= m.clicked %></td>
+            <td class="py-2 text-right"><%= m.total ? Math.round(100 * m.reported / m.total) : 0 %>%</td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="grid md:grid-cols-2 gap-6 mb-6">
+  <!-- Department performance -->
+  <div class="card p-6">
+    <div class="font-display text-[12px] tracking-[1.8px] uppercase text-[var(--text-muted)] mb-4">Department Performance</div>
+    <p class="text-[12px] text-[var(--text-secondary)] mb-3">Sorted lowest report-rate first — where a training push would help most.</p>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-[10px] font-display tracking-[1.6px] uppercase text-[var(--text-muted)] border-b border-[var(--border-subtle)]">
+          <th class="text-left py-2">Department</th>
+          <th class="text-right py-2">People</th>
+          <th class="text-right py-2">Report Rate</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% byDept.forEach(d => { %>
+          <tr class="border-b border-[var(--border-subtle)] last:border-0">
+            <td class="py-2"><%= d.department %></td>
+            <td class="py-2 text-right"><%= d.members %></td>
+            <td class="py-2 text-right"><%= d.report_rate === null ? '—' : d.report_rate + '%' %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Top performers -->
+  <div class="card p-6">
+    <div class="font-display text-[12px] tracking-[1.8px] uppercase text-[var(--text-muted)] mb-4">Top Performers This Program</div>
+    <p class="text-[12px] text-[var(--text-secondary)] mb-3"><%= badgeCount %> badges awarded company-wide.</p>
+    <table class="w-full text-sm">
+      <tbody>
+        <% topPerformers.forEach((p, i) => { %>
+          <tr class="border-b border-[var(--border-subtle)] last:border-0">
+            <td class="py-2 text-[var(--text-muted)] w-6"><%= i + 1 %></td>
+            <td class="py-2"><%= p.first_name %> <%= p.last_name %></td>
+            <td class="py-2 text-[var(--text-muted)] text-[12px]"><%= p.department %></td>
+            <td class="py-2 text-right font-medium"><%= p.pts %> pts</td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Training by module -->
+<div class="card p-6 mb-6">
+  <div class="font-display text-[12px] tracking-[1.8px] uppercase text-[var(--text-muted)] mb-4">Training Completion by Module</div>
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-[10px] font-display tracking-[1.6px] uppercase text-[var(--text-muted)] border-b border-[var(--border-subtle)]">
+        <th class="text-left py-2">Module</th>
+        <th class="text-left py-2">CMMC Control</th>
+        <th class="text-right py-2">Completion</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% trainingByModule.forEach(m => { %>
+        <tr class="border-b border-[var(--border-subtle)] last:border-0">
+          <td class="py-2"><%= m.title %></td>
+          <td class="py-2 text-[var(--text-muted)] text-[12px]"><%= m.cmmc_control || '—' %></td>
+          <td class="py-2 text-right"><%= m.expected ? Math.round(100 * m.passed / m.expected) : 0 %>% (<%= m.passed %>/<%= m.expected %>)</td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<!-- Tabletop + CMMC coverage -->
+<div class="grid md:grid-cols-2 gap-6 mb-6">
+  <div class="card p-6">
+    <div class="font-display text-[12px] tracking-[1.8px] uppercase text-[var(--text-muted)] mb-3">Leadership Tabletop Exercises</div>
+    <div class="text-[13px] text-[var(--text-secondary)] space-y-1">
+      <p><%= tabletopExerciseCount %> scenario<%= tabletopExerciseCount === 1 ? '' : 's' %> in the library.</p>
+      <p><%= tabletopSummary.sessions_run %> session<%= tabletopSummary.sessions_run === 1 ? '' : 's' %> actually run.</p>
+      <p>Most recent: <%= tabletopSummary.last_run ? new Date(tabletopSummary.last_run).toLocaleDateString() : 'None run yet' %></p>
+    </div>
+  </div>
+  <div class="card p-6">
+    <div class="font-display text-[12px] tracking-[1.8px] uppercase text-[var(--text-muted)] mb-3">CMMC Control Coverage</div>
+    <ul class="text-[13px] text-[var(--text-secondary)] space-y-1">
+      <% cmmcControls.forEach(c => { %>
+        <li><span class="font-medium text-[var(--text-primary)]"><%= c.control %></span> — <%= c.title %> <span class="text-[var(--success-green)]">✓ evidenced</span></li>
+      <% }) %>
+    </ul>
+  </div>
+</div>
+
+<div class="text-center text-[11px] text-[var(--text-muted)] mb-8">
+  Generated <%= generatedAt.toLocaleString() %> by PhishGuard Tournament. All simulation data reflects internal training exercises only — no real employee data was ever at risk.
+</div>
+
+<%- include('../../partials/foot') %>

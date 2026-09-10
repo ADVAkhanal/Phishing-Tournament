@@ -10,6 +10,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'ChangeMeNow!2026';
 const TEMPLATES = require('./seed-data/templates');
 const BADGES = require('./seed-data/badges');
 const TRAINING = require('./seed-data/training');
+const TABLETOP = require('./seed-data/tabletop');
 
 async function ensureAdmin() {
   const existing = await db.one('SELECT id FROM users WHERE email = $1', [ADMIN_EMAIL]);
@@ -31,11 +32,22 @@ async function ensureAdmin() {
 async function seedTemplates() {
   for (const t of TEMPLATES) {
     const exists = await db.one('SELECT id FROM phishing_templates WHERE name = $1', [t.name]);
-    if (exists) continue;
+    if (exists) {
+      // Backfill discussion_questions on templates seeded before this column existed,
+      // so a re-run of `npm run seed` upgrades existing rows instead of skipping them.
+      if (t.discussion_questions && t.discussion_questions.length) {
+        await db.query(
+          `UPDATE phishing_templates SET discussion_questions = $1
+           WHERE name = $2 AND (discussion_questions IS NULL OR array_length(discussion_questions, 1) IS NULL)`,
+          [t.discussion_questions, t.name]
+        );
+      }
+      continue;
+    }
     await db.query(
       `INSERT INTO phishing_templates
-        (name, category, subject_line, body_html, body_text, difficulty, red_flags, learning_points, handbook_policy_refs)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        (name, category, subject_line, body_html, body_text, difficulty, red_flags, learning_points, discussion_questions, handbook_policy_refs)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
       [
         t.name,
         t.category,
@@ -45,6 +57,7 @@ async function seedTemplates() {
         t.difficulty,
         t.red_flags,
         t.learning_points,
+        t.discussion_questions || null,
         t.handbook_policy_refs,
       ]
     );
@@ -93,12 +106,37 @@ async function seedTraining() {
   console.log(`[seed] training modules ensured (${TRAINING.length})`);
 }
 
+async function seedTabletop() {
+  for (const ex of TABLETOP) {
+    const exists = await db.one('SELECT id FROM tabletop_exercises WHERE title = $1', [ex.title]);
+    if (exists) continue;
+    await db.query(
+      `INSERT INTO tabletop_exercises
+        (title, objective, scenario_summary, recommended_roles, estimated_minutes, injects, cmmc_control, handbook_refs)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [
+        ex.title,
+        ex.objective,
+        ex.scenario_summary,
+        ex.recommended_roles,
+        ex.estimated_minutes,
+        JSON.stringify(ex.injects),
+        ex.cmmc_control,
+        ex.handbook_refs,
+      ]
+    );
+  }
+  // eslint-disable-next-line no-console
+  console.log(`[seed] tabletop exercises ensured (${TABLETOP.length})`);
+}
+
 async function run() {
   await migrate();
   await ensureAdmin();
   await seedTemplates();
   await seedBadges();
   await seedTraining();
+  await seedTabletop();
   // eslint-disable-next-line no-console
   console.log('[seed] complete.');
 }

@@ -1,0 +1,103 @@
+<%- include('../../partials/head') %>
+
+<div class="mb-6">
+  <a href="/admin/tabletop" class="font-display text-[11px] tracking-[1.6px] uppercase text-[var(--text-muted)] hover:text-[var(--brand-red)]">← Tabletop Exercises</a>
+  <h1 class="font-display text-3xl tracking-[1.2px] uppercase mt-2"><%= exercise.title %></h1>
+  <div class="flex flex-wrap gap-3 mt-2 text-[11px] font-display tracking-[1.6px] uppercase text-[var(--text-muted)]">
+    <span><%= exercise.estimated_minutes %> minutes</span>
+    <% if (exercise.cmmc_control) { %><span>· <%= exercise.cmmc_control %></span><% } %>
+    <% if (exercise.handbook_refs && exercise.handbook_refs.length) { %><span>· Handbook §§ <%= exercise.handbook_refs.join(', ') %></span><% } %>
+  </div>
+</div>
+
+<div class="card p-5 mb-4 border-[var(--accent-yellow)]/40">
+  <div class="font-display text-[11px] tracking-[2px] uppercase text-[var(--accent-yellow)] mb-2">EXERCISE — EXERCISE — EXERCISE</div>
+  <p class="text-[13px] text-[var(--text-secondary)]">
+    Say this out loud before you start and again before anyone sends a message referencing this scenario, even
+    internally. Nobody in or copied on this drill should be able to mistake it for a real incident.
+  </p>
+</div>
+
+<div class="card p-6 mb-6">
+  <div class="font-display text-[11px] tracking-[1.8px] uppercase text-[var(--text-muted)] mb-2">Objective</div>
+  <p class="text-[14px] text-[var(--text-primary)] mb-5"><%= exercise.objective %></p>
+
+  <div class="font-display text-[11px] tracking-[1.8px] uppercase text-[var(--text-muted)] mb-2">Scenario</div>
+  <p class="text-[14px] text-[var(--text-secondary)] mb-5"><%= exercise.scenario_summary %></p>
+
+  <div class="font-display text-[11px] tracking-[1.8px] uppercase text-[var(--text-muted)] mb-2">Recommended roles in the room</div>
+  <ul class="text-[13px] text-[var(--text-secondary)] list-disc list-inside space-y-1">
+    <% exercise.recommended_roles.forEach(r => { %><li><%= r %></li><% }) %>
+  </ul>
+</div>
+
+<div class="space-y-5 mb-8">
+  <% exercise.injects.forEach(inject => { %>
+    <div class="card p-6">
+      <div class="font-display text-[11px] tracking-[1.8px] uppercase text-[var(--brand-red)] mb-2">Stage <%= inject.stage %></div>
+      <p class="text-[14px] text-[var(--text-primary)] mb-4 leading-relaxed"><%= inject.narrative %></p>
+      <div class="font-display text-[10px] tracking-[1.6px] uppercase text-[var(--text-muted)] mb-2">Discussion questions — there is no single right answer</div>
+      <ul class="space-y-2">
+        <% inject.discussion_questions.forEach(q => { %>
+          <li class="text-[13px] text-[var(--text-secondary)] pl-4 border-l-2 border-[var(--border-subtle)]"><%= q %></li>
+        <% }) %>
+      </ul>
+    </div>
+  <% }) %>
+</div>
+
+<div class="card p-6 mb-8">
+  <div class="font-display text-[12px] tracking-[1.8px] uppercase text-[var(--text-primary)] mb-1">Log this session &amp; hot-wash</div>
+  <p class="text-[13px] text-[var(--text-secondary)] mb-4">
+    Run the hot-wash immediately after the exercise, while it's fresh. Every finding needs a named owner or it
+    quietly never gets fixed — that's the whole point of separating "notes" from "action items" below.
+  </p>
+  <form method="POST" action="/admin/tabletop/<%= exercise.id %>/session" class="space-y-4">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="grid md:grid-cols-2 gap-4">
+      <div>
+        <label class="label">Session date</label>
+        <input class="input" name="session_date" type="date" required value="<%= new Date().toISOString().slice(0,10) %>">
+      </div>
+      <div>
+        <label class="label">Participants (comma-separated names/roles)</label>
+        <input class="input" name="participants" required maxlength="2000" placeholder="e.g. Scott Shortess (Senior Leader), IT Lead, Comms">
+      </div>
+    </div>
+    <div>
+      <label class="label">Hot-wash notes — what did we learn?</label>
+      <textarea class="input" name="hot_wash_notes" rows="4" maxlength="5000" placeholder="What surfaced that we didn't expect? Where did the group disagree? What gap in our actual response plan showed up?"></textarea>
+    </div>
+    <div>
+      <label class="label">Action items — one per line, as "Owner :: what needs to happen"</label>
+      <textarea class="input font-mono text-[13px]" name="action_items" rows="4" maxlength="5000" placeholder="IT Lead :: Confirm last verified-restorable backup date for shared production drives&#10;Scott :: Document who has authority to take a production system offline"></textarea>
+    </div>
+    <button type="submit" class="btn-primary">Log Session</button>
+  </form>
+</div>
+
+<% if (pastSessions.length) { %>
+<div class="card overflow-hidden">
+  <div class="px-5 py-3 border-b border-[var(--border-subtle)] font-display text-[12px] tracking-[1.8px] uppercase text-[var(--text-muted)]">Past Sessions</div>
+  <div class="divide-y divide-[var(--border-subtle)]">
+    <% pastSessions.forEach(s => { %>
+      <div class="p-5">
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-[13px] font-medium text-[var(--text-primary)]"><%= new Date(s.session_date).toLocaleDateString() %></div>
+          <div class="text-[11px] text-[var(--text-muted)]"><%= (s.participants || []).join(', ') %></div>
+        </div>
+        <% if (s.hot_wash_notes) { %><p class="text-[13px] text-[var(--text-secondary)] mb-2"><%= s.hot_wash_notes %></p><% } %>
+        <% if (s.action_items && s.action_items.length) { %>
+          <ul class="text-[12px] space-y-1">
+            <% s.action_items.forEach(a => { %>
+              <li class="text-[var(--text-secondary)]"><span class="text-[var(--brand-red)] font-medium"><%= a.owner %>:</span> <%= a.description %></li>
+            <% }) %>
+          </ul>
+        <% } %>
+      </div>
+    <% }) %>
+  </div>
+</div>
+<% } %>
+
+<%- include('../../partials/foot') %>

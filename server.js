@@ -20,10 +20,13 @@ const dashboardRoutes = require('./routes/dashboard');
 const leaderboardRoutes = require('./routes/leaderboard');
 const trainingRoutes = require('./routes/training');
 const reportRoutes = require('./routes/report');
+const reflectionRoutes = require('./routes/reflection');
 const adminCampaigns = require('./routes/admin/campaigns');
 const adminTemplates = require('./routes/admin/templates');
 const adminAnalytics = require('./routes/admin/analytics');
 const adminUsers = require('./routes/admin/users');
+const adminTabletop = require('./routes/admin/tabletop');
+const adminReports = require('./routes/admin/reports');
 const apiExport = require('./routes/api/export');
 
 const app = express();
@@ -145,10 +148,13 @@ app.use('/dashboard', dashboardRoutes);
 app.use('/leaderboard', leaderboardRoutes);
 app.use('/training', trainingRoutes);
 app.use('/report', reportRoutes);
+app.use('/reflection', reflectionRoutes);
 app.use('/admin/campaigns', adminCampaigns);
 app.use('/admin/templates', adminTemplates);
 app.use('/admin/analytics', adminAnalytics);
 app.use('/admin/users', adminUsers);
+app.use('/admin/tabletop', adminTabletop);
+app.use('/admin/reports', adminReports);
 app.use('/api/export', apiExport);
 
 // Root → dashboard or login

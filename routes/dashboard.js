@@ -68,7 +68,11 @@ router.get('/', requireAuth, async (req, res, next) => {
 
     const learningMoments = await db.many(
       `SELECT c.id AS campaign_id, c.name AS campaign_name, t.name AS template_name,
-              t.learning_points, t.red_flags, t.handbook_policy_refs, r.outcome
+              t.learning_points, t.discussion_questions, t.red_flags, t.handbook_policy_refs, r.outcome,
+              EXISTS (
+                SELECT 1 FROM reflection_responses rr
+                WHERE rr.user_id = $1 AND rr.campaign_id = c.id
+              ) AS reflected
        FROM campaign_results r
        JOIN campaigns c ON c.id = r.campaign_id
        JOIN phishing_templates t ON t.id = c.template_id

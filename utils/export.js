@@ -124,6 +124,34 @@ async function cmmcEvidence() {
       u.last_login ? u.last_login.toISOString() : '',
     ]));
   }
+  lines.push('');
+
+  // ---------- Section 5: Tabletop exercises ----------
+  // NCSC Exercise-in-a-Box style leadership drills. A session record with named
+  // participants and a dated hot-wash is the evidence AT.L2-3.2.1 assessors ask
+  // for — proof the org actually rehearses its response, not just that a
+  // scenario document exists somewhere.
+  lines.push('## Section 5 — Tabletop Exercise Sessions (NCSC Exercise-in-a-Box style)');
+  lines.push(row(['Exercise', 'CMMC Control', 'Session Date', 'Facilitator', 'Participants', 'Hot-Wash Notes', 'Open Action Items']));
+  const tabletopSessions = await db.many(`
+    SELECT e.title, e.cmmc_control, s.session_date, s.participants, s.hot_wash_notes, s.action_items,
+           u.first_name, u.last_name
+    FROM tabletop_sessions s
+    JOIN tabletop_exercises e ON e.id = s.exercise_id
+    LEFT JOIN users u ON u.id = s.facilitated_by
+    ORDER BY s.session_date DESC
+  `);
+  for (const s of tabletopSessions) {
+    const openItems = (s.action_items || []).filter((a) => a.status !== 'closed').map((a) => `${a.owner}: ${a.description}`).join(' | ');
+    lines.push(row([
+      s.title, s.cmmc_control,
+      s.session_date ? new Date(s.session_date).toISOString().slice(0, 10) : '',
+      s.first_name ? `${s.first_name} ${s.last_name}` : '',
+      (s.participants || []).join('; '),
+      s.hot_wash_notes || '',
+      openItems,
+    ]));
+  }
 
   return lines.join('');
 }

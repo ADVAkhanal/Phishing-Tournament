@@ -17,6 +17,42 @@ PhishGuard Tournament is the operational complement to the [Advanced Companies E
 
 ---
 
+## NCSC-style additions (2026-09-10)
+
+Built directly against [NCSC's Exercise in a Box tabletop-exercise methodology](https://www.ncsc.gov.uk/section/exercise-in-a-box/tabletop-exercises) and its ["Effective steps to cyber exercise creation"](https://www.ncsc.gov.uk/guidance/effective-steps-to-cyber-exercise-creation) guidance, rather than a generic "add discussion questions" pass:
+
+- **Open-ended reflection on the individual learning loop.** Each of the 12 phishing templates now carries `discussion_questions` — genuinely open-ended prompts with no single right answer (NCSC's core design principle), not a quiz. When an employee is shown a past "clicked" outcome on their dashboard, they get one question and a real text box, and their answer is persisted to `reflection_responses` — actual evidence of engagement, not a claim of it.
+- **Explicit EXERCISE labeling.** Every learning-moment card now states outright that it was a training exercise. NCSC's own facilitation guidance is explicit about announcing "EXERCISE-EXERCISE-EXERCISE" so nobody mistakes a drill for a real incident — applied here to the async, dashboard-based version of that same principle.
+- **A genuine leadership tabletop-exercise module** (`/admin/tabletop`) — the literal thing NCSC's page describes, not a phishing-template variant of it. Three full scenarios, each with NCSC's real recommended-role structure (senior leader, technical responder, communications advisor, scribe), a scenario broken into sequential injects, and open-ended discussion questions at each stage:
+  - *A Ransomware Attack Delivered by a Phishing Email* — adapted directly from NCSC's own scenario of that name
+  - *Supply Chain Compromise via a Vendor Phishing Email* — written for AS9100D §8.4 supplier-control exposure
+  - *Executive Wire-Fraud Attempt (Business Email Compromise)*
+  - Running a session captures a **hot-wash** (what did we learn) and **named-owner action items** — NCSC is explicit that exercises should surface gaps in existing plans, not paper over them, and an action item with no owner never gets closed.
+- **CMMC evidence export extended** with a new section covering tabletop sessions run, participants, and open action items — this is now assessable AT.L2-3.2.1 evidence, not just a compliance narrative claiming the practice exists.
+
+**Fully automatic — no manual commands, ever.** `npm start` now runs `migrate.js` then `seed.js` before starting the server, so every deploy (and every Railway restart) re-applies the schema and re-seeds idempotently on its own. There was previously no `postinstall` step despite the README claiming one — that gap is fixed as part of this change. Nobody needs to SSH in or run a CLI command for this or any future schema change to take effect.
+
+Verified via syntax checks (`node --check`) on every modified/new file and a full EJS render smoke test against realistic mock data, including a zero-data "fresh install" case (no crashes on empty tables or division-by-zero percentages).
+
+---
+
+## Executive Report (2026-09-10)
+
+`/admin/reports` — a one-page, print-ready report built for a CEO or director, not an operator. Distinct from the operational **Analytics** page (day-to-day program management) and the raw CMMC evidence CSV (assessor-facing, row-per-record):
+
+- Company Resilience score and tier, headcount covered, overall report rate, training completion rate
+- **"Needs a Decision"** — every open tabletop hot-wash action item with its named owner, front and center; the section simply doesn't render when there's nothing outstanding
+- 6-month reported-vs-clicked trend
+- Department performance, worst-report-rate-first (framed constructively, not a shame list)
+- Training completion by CMMC-mapped module
+- Top-5 leaderboard and total badges awarded
+- Tabletop exercise program status (library size, sessions actually run, most recent date)
+- CMMC control coverage summary (AT.L2-3.2.1/3.2.2/3.2.3)
+
+One button prints to PDF via the browser's native print dialog — no export step, no file to email, works on any machine. A second button links to the existing full CMMC CSV export for anyone who wants to slice the raw numbers.
+
+---
+
 ## CMMC compliance mapping
 
 | Control | Title | How PhishGuard satisfies it |
@@ -24,6 +60,7 @@ PhishGuard Tournament is the operational complement to the [Advanced Companies E
 | **AT.L2-3.2.1** | Security Awareness | Recurring phishing simulations, awareness training modules, monthly leaderboard, audit log of every interaction |
 | **AT.L2-3.2.2** | Role-Based Training | CUI, shop-floor physical security, and incident-reporting modules; quiz completion records per user; department breakdowns |
 | **AT.L2-3.2.3** | Insider Threat Awareness | Dedicated insider-threat module, badge, and quiz; insider-threat-themed simulation templates |
+| **AT.L2-3.2.1** | Recurring Awareness (leadership) | NCSC-style tabletop exercises run and logged under `/admin/tabletop`, with dated sessions, named participants, and hot-wash action items |
 
 ---
 
