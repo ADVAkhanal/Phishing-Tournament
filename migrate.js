@@ -34,18 +34,6 @@ CREATE TABLE IF NOT EXISTS phishing_templates (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- NCSC Exercise-in-a-Box style: open-ended reflection captured against a specific
--- learning moment, not just a static paragraph read passively. This is what turns
--- the debrief into real evidence of engagement for AT.L2-3.2.1, not a claim of it.
-CREATE TABLE IF NOT EXISTS reflection_responses (
-  id SERIAL PRIMARY KEY,
-  user_id INTEGER REFERENCES users(id),
-  campaign_id INTEGER REFERENCES campaigns(id),
-  question TEXT NOT NULL,
-  response TEXT NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
 CREATE TABLE IF NOT EXISTS campaigns (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
@@ -56,6 +44,20 @@ CREATE TABLE IF NOT EXISTS campaigns (
   start_date TIMESTAMP,
   end_date TIMESTAMP,
   created_by INTEGER REFERENCES users(id),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- NCSC Exercise-in-a-Box style: open-ended reflection captured against a specific
+-- learning moment, not just a static paragraph read passively. This is what turns
+-- the debrief into real evidence of engagement for AT.L2-3.2.1, not a claim of it.
+-- Must come after campaigns (references it) - CREATE TABLE order matters when
+-- REFERENCES points at a table defined later in the same script.
+CREATE TABLE IF NOT EXISTS reflection_responses (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id),
+  campaign_id INTEGER REFERENCES campaigns(id),
+  question TEXT NOT NULL,
+  response TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT NOW()
 );
 
