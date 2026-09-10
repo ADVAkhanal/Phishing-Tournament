@@ -86,15 +86,22 @@ app.use('/public', express.static(path.join(__dirname, 'public'), { maxAge: '7d'
 // just because Postgres is briefly unavailable.
 app.get('/health', async (req, res) => {
   let dbStatus = 'ok';
+  let dbError = null;
   try {
     await db.query('SELECT 1');
   } catch (e) {
     dbStatus = 'unreachable';
+    dbError = e.message;
     logger.warn('Health check DB unreachable', { error: e.message });
   }
   res.json({
     status: dbStatus === 'ok' ? 'ok' : 'degraded',
     database: dbStatus,
+    // Temporary diagnostic field - the app's own log files aren't reachable
+    // from outside the container, so surface just the error message (never
+    // the stack, never the connection string) here to actually see what's
+    // failing instead of guessing.
+    databaseError: dbError,
     uptime: process.uptime(),
     time: new Date().toISOString(),
   });
