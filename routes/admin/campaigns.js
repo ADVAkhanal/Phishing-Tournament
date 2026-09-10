@@ -1,5 +1,6 @@
 // routes/admin/campaigns.js
 const express = require('express');
+const crypto = require('crypto');
 const db = require('../../utils/db');
 const { requireAdmin, audit } = require('../../middleware/auth');
 const { adminWriteLimiter } = require('../../middleware/rateLimiter');
@@ -57,12 +58,16 @@ router.post(
          req.user.id]
       );
 
+      // A real, unguessable per-recipient token - this is what makes automatic
+      // open/click tracking (routes/track.js) safe. Sequential ids would let
+      // one recipient enumerate everyone else's tracking link.
       for (const uid of userIds) {
+        const token = crypto.randomBytes(24).toString('base64url');
         await db.query(
-          `INSERT INTO campaign_results (campaign_id, user_id, email_sent_at, outcome)
-           VALUES ($1, $2, NOW(), 'pending')
+          `INSERT INTO campaign_results (campaign_id, user_id, email_sent_at, outcome, tracking_token)
+           VALUES ($1, $2, NOW(), 'pending', $3)
            ON CONFLICT (campaign_id, user_id) DO NOTHING`,
-          [inserted.id, uid]
+          [inserted.id, uid, token]
         );
       }
 
@@ -97,14 +102,20 @@ router.get('/:id', async (req, res, next) => {
     const perUser = await db.many(`
       SELECT u.id, u.first_name, u.last_name, u.department,
              r.email_sent_at, r.email_opened_at, r.link_clicked_at,
-             r.credentials_submitted_at, r.reported_at, r.time_to_report_seconds, r.outcome
+             r.credentials_submitted_at, r.reported_at, r.time_to_report_seconds, r.outcome,
+             r.tracking_token
       FROM campaign_results r JOIN users u ON u.id = r.user_id
       WHERE r.campaign_id = $1
       ORDER BY r.outcome DESC, u.last_name
     `, [id]);
 
+    // Built from the incoming request rather than an env var - Railway's
+    // public hostname isn't known at deploy time, and this always matches
+    // whatever host the admin is actually looking at right now.
+    const trackBase = `${req.protocol}://${req.get('host')}`;
+
     res.locals.activeNav = 'admin-campaigns';
-    res.render('admin/campaigns/detail', { title: campaign.name, campaign, counts, perUser });
+    res.render('admin/campaigns/detail', { title: campaign.name, campaign, counts, perUser, trackBase });
   } catch (e) { next(e); }
 });
 

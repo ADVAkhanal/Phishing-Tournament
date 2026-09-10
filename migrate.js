@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS campaign_results (
   report_method VARCHAR(50),
   time_to_report_seconds INTEGER,
   outcome VARCHAR(30) CHECK (outcome IN ('reported', 'ignored', 'clicked', 'compromised', 'pending')) DEFAULT 'pending',
+  tracking_token VARCHAR(64),
   created_at TIMESTAMP DEFAULT NOW(),
   UNIQUE (campaign_id, user_id)
 );
@@ -158,6 +159,8 @@ CREATE TABLE IF NOT EXISTS user_reports (
 -- already deployed), so a brand-new column has to be added explicitly, not just
 -- declared in the CREATE TABLE above, or it silently never lands on production.
 ALTER TABLE phishing_templates ADD COLUMN IF NOT EXISTS discussion_questions TEXT[];
+ALTER TABLE campaign_results ADD COLUMN IF NOT EXISTS tracking_token VARCHAR(64);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_campaign_results_tracking_token ON campaign_results(tracking_token);
 
 CREATE INDEX IF NOT EXISTS idx_campaign_results_campaign ON campaign_results(campaign_id);
 CREATE INDEX IF NOT EXISTS idx_campaign_results_user ON campaign_results(user_id);

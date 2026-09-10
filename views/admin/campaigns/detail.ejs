@@ -66,6 +66,7 @@
           <th class="text-left px-4 py-3">Clicked</th>
           <th class="text-left px-4 py-3">Reported</th>
           <th class="text-right px-4 py-3">TTR (s)</th>
+          <th class="text-left px-4 py-3">Tracking Link</th>
           <th class="text-right px-4 py-3">Mark</th>
         </tr>
       </thead>
@@ -85,6 +86,17 @@
             <td class="px-4 py-2 text-[11px] text-[var(--text-muted)]"><%= r.link_clicked_at ? new Date(r.link_clicked_at).toLocaleString() : '—' %></td>
             <td class="px-4 py-2 text-[11px] text-[var(--text-muted)]"><%= r.reported_at ? new Date(r.reported_at).toLocaleString() : '—' %></td>
             <td class="px-4 py-2 text-right text-[var(--text-secondary)]"><%= r.time_to_report_seconds || '—' %></td>
+            <td class="px-4 py-2">
+              <% if (r.tracking_token) { %>
+                <button type="button"
+                  class="btn-secondary !py-1 !px-2 !text-[10px]"
+                  onclick="copyTrackingLink(this, '<%= trackBase %>/t/c/<%= r.tracking_token %>')">
+                  Copy Link
+                </button>
+              <% } else { %>
+                <span class="text-[11px] text-[var(--text-muted)]">—</span>
+              <% } %>
+            </td>
             <td class="px-4 py-2 text-right">
               <form method="POST" action="/admin/campaigns/<%= campaign.id %>/result" class="inline">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
@@ -104,5 +116,27 @@
     </table>
   </div>
 </section>
+
+<script>
+  function copyTrackingLink(btn, url) {
+    const done = (ok) => {
+      const original = btn.textContent;
+      btn.textContent = ok ? 'Copied!' : 'Copy failed';
+      setTimeout(() => { btn.textContent = original; }, 1500);
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(url).then(() => done(true), () => done(false));
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = url;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); done(true); } catch (e) { done(false); }
+      document.body.removeChild(ta);
+    }
+  }
+</script>
 
 <%- include('../../partials/foot') %>
