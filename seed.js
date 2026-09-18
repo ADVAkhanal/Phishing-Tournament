@@ -66,26 +66,40 @@ async function ensureAdmin() {
  * password so the email/password form cannot reach it — the only way in is
  * the dedicated "Continue as Guest" flow in routes/auth.js.
  *
- * NOTE: separation of guest activity from authoritative evidence is Pass 2
- * work (users.is_evidence_eligible). This function stays as-is for the
- * P0 hotfix and does not attempt that refactor here.
+ * Pass 2: the guest row is created with is_evidence_eligible=false and
+ * the flag is corrected on every boot for existing installations that
+ * were seeded before the column existed. All evidence-facing queries
+ * must consult utils/evidence-scope.js — no scattered email comparisons.
  */
 async function ensureGuest() {
-  const existing = await db.one('SELECT id FROM users WHERE email = $1', [GUEST_EMAIL]);
+  const existing = await db.one(
+    'SELECT id, is_evidence_eligible FROM users WHERE email = $1',
+    [GUEST_EMAIL]
+  );
   if (existing) {
-    // eslint-disable-next-line no-console
-    console.log('[seed] guest account already exists');
+    if (existing.is_evidence_eligible !== false) {
+      await db.query(
+        `UPDATE users SET is_evidence_eligible = false WHERE id = $1`,
+        [existing.id]
+      );
+      // eslint-disable-next-line no-console
+      console.log('[seed] guest account corrected: is_evidence_eligible=false');
+    } else {
+      // eslint-disable-next-line no-console
+      console.log('[seed] guest account already exists');
+    }
     return;
   }
   const randomPassword = require('crypto').randomBytes(32).toString('hex');
   const hash = await bcrypt.hash(randomPassword, 12);
   await db.query(
-    `INSERT INTO users (email, password_hash, first_name, last_name, department, role)
-     VALUES ($1, $2, 'Guest', 'Visitor', 'Guest', 'employee')`,
+    `INSERT INTO users
+       (email, password_hash, first_name, last_name, department, role, is_evidence_eligible)
+     VALUES ($1, $2, 'Guest', 'Visitor', 'Guest', 'employee', false)`,
     [GUEST_EMAIL, hash]
   );
   // eslint-disable-next-line no-console
-  console.log('[seed] guest account created');
+  console.log('[seed] guest account created (is_evidence_eligible=false)');
 }
 
 async function seedTemplates() {
