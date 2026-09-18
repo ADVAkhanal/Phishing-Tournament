@@ -1,23 +1,18 @@
-// seed.js — idempotent seed of admin, templates, badges, training modules
+// seed.js — idempotent seed of admin, guest, templates, badges, training, tabletop
+//
+// Bootstrap admin behavior:
+//   - If ANY user with role='admin' exists (active or not), the bootstrap
+//     path is a no-op. Live admin passwords are never overwritten here.
+//   - If the database has zero admin rows, the very first boot resolves
+//     ADMIN_EMAIL + ADMIN_PASSWORD via utils/bootstrap.js (fail closed) and
+//     creates one admin row. That is the only path this file writes credentials.
+//
+// There is no hardcoded fallback account. There is no reassertion loop.
 require('dotenv').config();
 const bcrypt = require('bcrypt');
 const db = require('./utils/db');
 const { run: migrate } = require('./migrate');
-
-// TEMPORARY: weak password by explicit request ("for now"). This bypasses the
-// app's own stated password policy (12+ chars, upper/lower/digit/symbol) - the
-// seed bootstrap path has always written a hash directly rather than going
-// through validation, so nothing stops it. Rotate this once real admin
-// accounts are in place.
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'advancedit@advcosinc.com').toLowerCase();
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '12345';
-
-// Guaranteed regardless of what ADMIN_EMAIL/ADMIN_PASSWORD are actually set to
-// in the live environment (can't be verified from here) - this specific
-// account is what was asked for, so it has to exist independent of whatever
-// the env-var-driven bootstrap above resolves to.
-const REQUESTED_ADMIN_EMAIL = 'advancedit@advcosinc.com';
-const REQUESTED_ADMIN_PASSWORD = '12345';
+const { resolveAdminBootstrapCredentials } = require('./utils/bootstrap');
 
 const GUEST_EMAIL = 'guest@advcosinc.com';
 
@@ -26,46 +21,55 @@ const BADGES = require('./seed-data/badges');
 const TRAINING = require('./seed-data/training');
 const TABLETOP = require('./seed-data/tabletop');
 
+/**
+ * Create the initial admin ONLY when no admin row exists (active or not).
+ * We look at all admins, not just active ones, so deactivating every admin
+ * cannot trigger an unwanted re-bootstrap on next deploy.
+ */
 async function ensureAdmin() {
-  const existing = await db.one('SELECT id FROM users WHERE email = $1', [ADMIN_EMAIL]);
-  if (existing) {
+  const anyAdmin = await db.one(
+    `SELECT id FROM users WHERE role = 'admin' LIMIT 1`
+  );
+  if (anyAdmin) {
     // eslint-disable-next-line no-console
-    console.log(`[seed] admin already exists: ${ADMIN_EMAIL}`);
+    console.log('[seed] admin account already present — bootstrap skipped');
     return;
   }
-  const hash = await bcrypt.hash(ADMIN_PASSWORD, 12);
-  await db.query(
-    `INSERT INTO users (email, password_hash, first_name, last_name, department, role)
-     VALUES ($1, $2, 'Site', 'Admin', 'Admin/HR', 'admin')`,
-    [ADMIN_EMAIL, hash]
-  );
-  // eslint-disable-next-line no-console
-  console.log(`[seed] admin created: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`);
-}
 
-async function ensureRequestedAdmin() {
-  const existing = await db.one('SELECT id FROM users WHERE email = $1', [REQUESTED_ADMIN_EMAIL]);
-  if (existing) {
+  // Only now — when we are certain we are about to create the first admin —
+  // do we consult the environment. This lets long-running installations run
+  // without ADMIN_* env vars set, while a fresh install fails closed with
+  // a clear error naming the missing variable.
+  let email;
+  let password;
+  try {
+    ({ email, password } = resolveAdminBootstrapCredentials());
+  } catch (e) {
     // eslint-disable-next-line no-console
-    console.log(`[seed] requested admin already exists: ${REQUESTED_ADMIN_EMAIL}`);
-    return;
+    console.error(e.message);
+    throw e;
   }
-  const hash = await bcrypt.hash(REQUESTED_ADMIN_PASSWORD, 12);
+
+  const hash = await bcrypt.hash(password, 12);
   await db.query(
     `INSERT INTO users (email, password_hash, first_name, last_name, department, role)
-     VALUES ($1, $2, 'Advanced', 'IT', 'IT', 'admin')`,
-    [REQUESTED_ADMIN_EMAIL, hash]
+     VALUES ($1, $2, 'Site', 'Admin', 'Admin/HR', 'admin')
+     ON CONFLICT (email) DO NOTHING`,
+    [email, hash]
   );
   // eslint-disable-next-line no-console
-  console.log(`[seed] requested admin created: ${REQUESTED_ADMIN_EMAIL} / ${REQUESTED_ADMIN_PASSWORD}`);
+  console.log('[seed] bootstrap admin created');
 }
 
-// Shared, no-password Guest account. It has a real (random, unknown) password
-// hash so it can never be reached through the normal email/password form -
-// the ONLY way in is the dedicated "Continue as Guest" button, which signs in
-// by user id directly. role stays 'employee' so it automatically gets exactly
-// the non-administrative surface (nav gating and requireAdmin both already
-// key off role, nothing extra was needed there).
+/**
+ * Guest is a demonstration/read-around account. It has a random unknown
+ * password so the email/password form cannot reach it — the only way in is
+ * the dedicated "Continue as Guest" flow in routes/auth.js.
+ *
+ * NOTE: separation of guest activity from authoritative evidence is Pass 2
+ * work (users.is_evidence_eligible). This function stays as-is for the
+ * P0 hotfix and does not attempt that refactor here.
+ */
 async function ensureGuest() {
   const existing = await db.one('SELECT id FROM users WHERE email = $1', [GUEST_EMAIL]);
   if (existing) {
@@ -88,8 +92,7 @@ async function seedTemplates() {
   for (const t of TEMPLATES) {
     const exists = await db.one('SELECT id FROM phishing_templates WHERE name = $1', [t.name]);
     if (exists) {
-      // Backfill discussion_questions on templates seeded before this column existed,
-      // so a re-run of `npm run seed` upgrades existing rows instead of skipping them.
+      // Backfill discussion_questions on templates seeded before this column existed.
       if (t.discussion_questions && t.discussion_questions.length) {
         await db.query(
           `UPDATE phishing_templates SET discussion_questions = $1
@@ -187,14 +190,6 @@ async function seedTabletop() {
 
 async function run() {
   await migrate();
-  // Requested admin runs first: if ADMIN_EMAIL happens to already equal this
-  // same address, ensureAdmin() below would otherwise win the race and create
-  // it with whatever ADMIN_PASSWORD is set to instead of the password that
-  // was actually asked for. Running this one first and letting ensureAdmin's
-  // own skip-if-exists check see it afterward avoids that without forcing a
-  // password reset on every boot (which would undo a real admin's later
-  // password change).
-  await ensureRequestedAdmin();
   await ensureAdmin();
   await ensureGuest();
   await seedTemplates();

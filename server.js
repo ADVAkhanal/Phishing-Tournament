@@ -14,6 +14,7 @@ const { run: runMigrate } = require('./migrate');
 const { run: runSeed } = require('./seed');
 const csrf = require('./middleware/csrf');
 const { attachUser } = require('./middleware/auth');
+const { resolveSessionSecret } = require('./utils/bootstrap');
 
 const authRoutes = require('./routes/auth');
 const dashboardRoutes = require('./routes/dashboard');
@@ -33,6 +34,19 @@ const apiExport = require('./routes/api/export');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const SESSION_TIMEOUT_MINUTES = parseInt(process.env.SESSION_TIMEOUT_MINUTES || '30', 10);
+
+// Resolve session secret at startup with fail-closed semantics. If the value
+// is missing or too short, the process refuses to start and exits with a
+// nonzero code. There is no default. The application does not run with a
+// forge-vulnerable cookie signer.
+let SESSION_SECRET;
+try {
+  SESSION_SECRET = resolveSessionSecret();
+} catch (e) {
+  // eslint-disable-next-line no-console
+  console.error(e.message);
+  process.exit(1);
+}
 
 // Trust Railway / proxy headers (required for secure cookies behind a TLS terminator).
 app.set('trust proxy', 1);
@@ -79,39 +93,27 @@ app.use(cookieParser());
 // Static assets
 app.use('/public', express.static(path.join(__dirname, 'public'), { maxAge: '7d' }));
 
-// Health check — mounted BEFORE session middleware so Railway can tell the
-// HTTP layer is alive even if Postgres is unreachable. Two responses:
-//   200 OK            — process up AND DB reachable
-//   200 OK degraded   — process up, DB unreachable (Railway treats 2xx as healthy)
-// We never let the healthcheck flip a healthy container into a restart loop
-// just because Postgres is briefly unavailable.
+// Health check — minimum surface for an external monitor. Detailed
+// diagnostics are written to the server log, not returned to the caller,
+// so this endpoint cannot leak infrastructure topology or connection
+// details. Mounted before session middleware so it works when the session
+// store is unreachable.
 app.get('/health', async (req, res) => {
-  let dbStatus = 'ok';
-  let dbError = null;
+  let status = 'ok';
   try {
     await db.query('SELECT 1');
   } catch (e) {
-    dbStatus = 'unreachable';
-    // e.message came back as an empty string in production - capture every
-    // shape a pg/socket-level error might carry the real reason in, so this
-    // is diagnostic on the first try instead of another guess-and-redeploy
-    // round trip. Never include e.stack (could carry the connection string).
-    dbError = {
-      message: e.message || null,
-      code: e.code || null,
-      name: e.name || null,
-      asString: String(e),
-      hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
-      databaseUrlHost: (() => {
-        try { return new URL(process.env.DATABASE_URL).hostname; } catch (_) { return null; }
-      })(),
-    };
-    logger.warn('Health check DB unreachable', dbError);
+    status = 'degraded';
+    // Log server-side ONLY. Never include the connection string or its
+    // components in the response body.
+    logger.warn('Health check DB unreachable', {
+      message: e && e.message,
+      code: e && e.code,
+      name: e && e.name,
+    });
   }
   res.json({
-    status: dbStatus === 'ok' ? 'ok' : 'degraded',
-    database: dbStatus,
-    databaseError: dbError,
+    status,
     uptime: process.uptime(),
     time: new Date().toISOString(),
   });
@@ -126,7 +128,7 @@ app.use(
       createTableIfMissing: true,
     }),
     name: 'phishguard.sid',
-    secret: process.env.SESSION_SECRET || 'dev-only-do-not-use-in-prod',
+    secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     rolling: true,
@@ -214,8 +216,6 @@ app.use((err, req, res, next) => {
     ? 'Your session expired or the request could not be verified. Please reload and try again.'
     : 'Something went wrong. The incident has been logged.';
 
-  // Fill every local the layout partials reference so the template never
-  // throws a second time (which would hit Express's finalhandler instead of us).
   res.locals.appName       = res.locals.appName       || 'PhishGuard Tournament';
   res.locals.companyShort  = res.locals.companyShort  || 'Advanced Companies';
   res.locals.companyName   = res.locals.companyName   || 'Advanced Machining & Fab., Inc.';
@@ -245,6 +245,9 @@ async function start() {
     // Idempotent schema + seed on every boot — required because Railway's
     // build phase has no DATABASE_URL, so we can't migrate at install time.
     // Both functions are safe to re-run; they no-op when state is current.
+    // ensureAdmin() inside runSeed is guarded by a "no admin exists" check,
+    // so an existing production deployment never has its admin password
+    // reset by a redeploy.
     if (process.env.SKIP_BOOT_MIGRATE !== 'true') {
       try {
         await runMigrate();
@@ -264,6 +267,8 @@ async function start() {
   });
 }
 
-start();
+if (require.main === module) {
+  start();
+}
 
 module.exports = app;
